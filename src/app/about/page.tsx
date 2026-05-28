@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Users, Target, Heart, CheckCircle, Layers, Shield, ChevronRight } from 'lucide-react';
+import { Sparkles, Users, Target, Heart, CheckCircle, Layers, Shield, ChevronRight, Zap } from 'lucide-react';
 
 const features = [
   {
