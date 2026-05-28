@@ -1,0 +1,26 @@
+# =============================================
+# Robots.txt - /robots.txt
+# =============================================
+
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow admin routes
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://aiplatform.example.com/api/sitemap
+
+# Crawl-delay for polite bots
+Crawl-delay: 1
+
+# Crawler-specific rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0.5
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1

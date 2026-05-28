@@ -185,7 +185,7 @@ export function ApiManagement() {
             <CardContent className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-2 flex items-center gap-2"><Zap className="w-4 h-4 text-primary" />البداية</h3>
-                <div className="bg-muted p-4 rounded-lg font-mono text-sm">
+<div className="bg-muted p-4 rounded-lg font-mono text-sm">
                   <p className="text-muted-foreground">// Example: Get all tools</p>
                   <p>curl -X GET https://api.aiplatform.com/v1/tools \</p>
                   <p>-H Authorization: Bearer YOUR_API_KEY \</p>

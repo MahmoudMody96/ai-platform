@@ -1,0 +1,85 @@
+version: 1
+plan:
+  name: rebuild-public-frontend
+  max_concurrency: 10
+  max_consecutive_failures: 2
+  max_cycles: 5
+tasks:
+  - id: create-blog-pages
+    title: create blog listing and detail pages
+    prompt: |
+      Create blog listing page and article detail page for an Arabic AI platform.
+      
+      Read these files first:
+      - src/app/page.tsx (home page reference for design patterns)
+      - src/app/tools/page.tsx (listing pattern)
+      - src/lib/supabase/hooks.ts (data hooks)
+      - src/components/ui/badge.tsx (badge variants)
+      - src/types/index.ts (Article type)
+      
+      SPEC:
+      1. Create src/app/blog/page.tsx - Blog listing page with:
+         - Hero section with search
+         - Featured articles grid
+         - Category filter tabs  
+         - Pagination
+         - RTL Arabic design
+         - Use card layout similar to homepage
+      
+      2. Create src/app/blog/[slug]/page.tsx - Article detail page with:
+         - Full article content display
+         - Author info
+         - Reading time
+         - Related articles section
+         - Comments placeholder UI
+         - Same Arabic RTL design
+      
+      3. Create src/app/blog/layout.tsx - Blog layout
+      
+      Keep admin pages untouched. Reports changed files.
+    assigned_to: developer
+    timeout_ms: 1800000
+
+  - id: create-tools-detail
+    title: create tool detail page
+    prompt: |
+      Create a proper tool detail page for an Arabic AI platform.
+      
+      Read these files first:
+      - src/app/page.tsx (design patterns)
+      - src/app/tools/page.tsx (current tools page)
+      - src/types/index.ts (Tool type)
+      
+      SPEC:
+      1. Create src/app/tools/[slug]/page.tsx - Tool detail page with:
+         - Full tool info display
+         - Website link
+         - Features list
+         - Alternatives
+         - Pricing info
+         - Related tools section
+         - Modern card layout
+      
+      Keep admin pages untouched. Reports changed files.
+    assigned_to: developer
+    depends_on: [create-blog-pages]
+    timeout_ms: 1200000
+
+  - id: update-about-page  
+    title: update about page design
+    prompt: |
+      Update the about page to match new site design.
+      
+      Read these files first:
+      - src/app/page.tsx (new design pattern)
+      - src/app/about/page.tsx (current content)
+      
+      SPEC:
+      1. Update about page to use the modern hero + content sections style
+      2. Keep content but refresh visual layout
+      3. RTL Arabic design consistency
+      4. Keep it clean and professional
+      
+      Keep admin pages untouched. Reports changed files.
+    assigned_to: developer
+    timeout_ms: 600000

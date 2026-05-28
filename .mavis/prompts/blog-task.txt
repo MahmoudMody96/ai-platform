@@ -1,0 +1,43 @@
+You are building an Arabic AI platform blog system in D:\MAHMOUD\projects\ai-platform.
+
+YOUR TASK: Create blog listing and detail pages.
+
+READ THESE FILES FIRST:
+1. src/app/page.tsx - home page reference for design patterns (already created by main session)
+2. src/app/tools/page.tsx - listing pattern reference
+3. src/lib/supabase/hooks.ts - data hooks
+4. src/components/ui/badge.tsx - badge variants
+5. src/types/index.ts - Article type
+
+CREATE THESE FILES IN D:\MAHMOUD\projects\ai-platform:
+
+1. src/app/blog/page.tsx - Blog listing page with:
+   - Hero section with search bar
+   - Featured articles grid (3-4 cards)
+   - Category filter tabs
+   - Regular articles grid with pagination
+   - RTL Arabic design
+   - Modern card layout like homepage
+   - Mock data for development
+
+2. src/app/blog/[slug]/page.tsx - Article detail page with:
+   - Full article content display
+   - Author info with avatar
+   - Reading time
+   - Publish date
+   - Related articles section (3 cards)
+   - Share buttons (placeholder)
+   - Comments section UI (just the UI, no backend)
+   - Same Arabic RTL design
+
+3. src/app/blog/layout.tsx - Blog layout
+
+IMPORTANT RULES:
+- Keep admin pages completely untouched
+- Use same design system (Tailwind, CSS vars, RTL)
+- Use 'use client' for interactive pages
+- Include proper imports from @/components
+- Arabic text for all UI labels
+- Keep code clean and consistent
+
+After creating files, report what you created.

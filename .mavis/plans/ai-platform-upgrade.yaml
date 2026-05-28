@@ -1,0 +1,344 @@
+﻿version: 1
+plan:
+  name: 'AI Platform - هوية وبناء شامل'
+  max_concurrency: 4
+  max_consecutive_failures: 3
+  max_cycles: 25
+
+tasks:
+  - id: research-global
+    title: 'ابحث في المنصات العالمية'
+    prompt: |
+      استخدم Web Search والبحث في الويب عشان تدرس أقوى منصات AI العالمية:
+      
+      ابحث في:
+      - Product Hunt (ابحث عن "AI tools directory", "AI aggregator")
+      - AlternativeTo.net (ابحث عن "ChatGPT alternatives", "AI platforms")
+      - There's An AI For That
+      - FutureTools
+      - SaaS GPTs Directory
+      
+      المطلوب من كل منصة:
+      1. لقطات شاشة أو وصف للـ UI/UX
+      2. الـ features الرئيسية (search, filters, categories, user accounts, etc.)
+      3. التصميم (colors, layout, typography)
+      4. أي unique features
+      5. monetization models
+      
+      أخرج تقرير مفصل لكل منصة في ملف research/global-platforms.md
+      
+      استخدم: web_search, describe_images (لو في صور)
+    assigned_to: huntsman
+    verified_by: verifier
+    verify_prompt: 'تأكد إن التقرير شامل ويغطي 5+ منصات عالمية على الأقل'
+    timeout_ms: 1800000
+
+  - id: research-arabic
+    title: 'ابحث في المنصات العربية'
+    prompt: |
+      استخدم Web Search عشان تدرس أقوى منصات AI عربية:
+      
+      ابحث عن:
+      - aitools.ae
+      - ai.gov.sa (منصة الذكاء الاصطناعي الحكومية السعودية)
+      - أي منصة عربية لمقارنة أدوات AI
+      - بحث عن "منصة أدوات ذكاء اصطناعي عربية"
+      
+      المطلوب من كل منصة:
+      1. الواجهة والتصميم (RTL support, Arabic fonts)
+      2. الـ features (reviews, ratings, categories, search)
+      3. المحتوى (عدد الأدوات، المقالات)
+      4. User engagement features
+      5. monetization methods
+      
+      أخرج تقرير مفصل في research/arabic-platforms.md
+      
+      استخدم: web_search, describe_images
+    assigned_to: huntsman
+    verified_by: verifier
+    verify_prompt: 'تأكد إن التقرير يغطي 3+ منصات عربية على الأقل'
+    timeout_ms: 1800000
+
+  - id: feature-analysis
+    title: 'حلل الـ features واجمع التراكمية'
+    prompt: |
+      بناءً على تقارير البحث، اجمع كل الـ features في قائمة واحدة:
+      
+      1. اقرأ:
+         - research/global-platforms.md
+         - research/arabic-platforms.md
+      
+      2. صنف الـ features حسب:
+         - Category (UI, Content, Engagement, Revenue, Tech)
+         - Priority (High, Medium, Low)
+         - Complexity (Easy, Medium, Hard)
+         - Impact (User acquisition, Retention, Revenue)
+      
+      3. أخرج ملف feature-prioritization.md مع:
+         - قائمة كاملة بالـ features
+         - توضيح كل feature
+         - المبررات
+         - الأمثلة من المنافسين
+      
+      4. خطط للـ MVP - أول 20 feature هم الأكثر أثر
+      
+      استخدم: web_search للبحث عن أمثلة إضافية لو محتاج
+    assigned_to: huntsman
+    depends_on: [research-global, research-arabic]
+    verified_by: general
+    verify_prompt: 'تأكد إن الـ prioritization منطقية ومبنية على evidence'
+    timeout_ms: 1800000
+
+  - id: design-system
+    title: 'صمم الـ Identity والـ Design System'
+    prompt: |
+      بناءً على البحث، صمم هوية بصرية قوية للمنصة:
+      
+      1._COLOR PALETTE
+         - Primary color: bold, memorable (不是黑色或白色)
+         - Secondary color: complementary
+         - Accent color: for CTAs
+         - Background colors (light/dark)
+         - Text colors
+      
+      2. TYPOGRAPHY
+         - Arabic font recommendations
+         - Font sizes scale
+         - RTL considerations
+      
+      3. COMPONENTS
+         - Button styles (primary, secondary, ghost)
+         - Card designs
+         - Navigation patterns
+         - Form elements
+         - Badges and tags
+      
+      4. LAYOUT PATTERNS
+         - Grid system
+         - Spacing scale
+         - Container widths
+      
+      5. INTERACTION PATTERNS
+         - Animations (subtle)
+         - Hover states
+         - Loading states
+         - Error handling UI
+      
+      أخرج في design/ directory:
+      - design-system.md (التفاصيل)
+      - component-specs.md (specs لكل مكون)
+      - color-tokens.ts (CSS variables)
+      
+      ركز على إن التصميم يناسب:
+      - RTL Arabic content
+      - Mobile-first
+      - Dark mode support
+    assigned_to: general
+    verified_by: verifier
+    verify_prompt: 'تأكد إن الـ design system عملي وقابل للتنفيذ'
+    timeout_ms: 2400000
+
+  - id: landing-page-redesign
+    title: 'صمم الـ Landing Page الجديدة'
+    prompt: |
+      استخدم الـ design system من task السابق وheen تطبيق على الصفحة الرئيسية:
+      
+      1. HERO SECTION
+         - عنوان جذاب
+         - وصف واضح
+         - Search bar قوي
+         - CTA buttons
+      
+      2. FEATURES GRID
+         - عرض الأدوات المميزة
+         - Cards بتصميم جديد
+         - Badges للـ pricing
+      
+      3. CONTENT SECTIONS
+         - Latest articles
+         - Categories grid
+         - Stats section
+      
+      4. SOCIAL PROOF
+         - Testimonials
+         - Logos of partners/integrations
+         - User count
+      
+      5. CTA SECTIONS
+         - Newsletter signup
+         - CTA blocks
+      
+      6. FOOTER
+         - Links
+         - Social media
+         - Copyright
+      
+      الملفات المطلوبة:
+      - src/app/page.tsx (الصفحة الجديدة)
+      - src/app/globals.css (التحديثات)
+      
+      استخدم: Tailwind CSS, RTL, Arabic typography
+    assigned_to: coder
+    depends_on: [design-system]
+    verified_by: verifier
+    verify_prompt: 'تأكد إن الصفحة شغالة، responsive، وRTL صحيح'
+    timeout_ms: 2400000
+
+  - id: core-features
+    title: 'ابنِ الـ Core Features'
+    prompt: |
+      بناءً على feature-prioritization.md، طبق الـ MVP features:
+      
+      1. AUTH SYSTEM
+         - Register/Login pages
+         - Supabase Auth integration
+         - Social auth (Google)
+         - User profile page
+      
+      2. SEARCH & FILTER
+         - Advanced search
+         - Category filters
+         - Pricing filters
+         - Sort options
+      
+      3. REVIEWS & RATINGS
+         - Rating component
+         - Review form
+         - Display reviews
+         - Average rating calculation
+      
+      4. FAVORITES & SAVING
+         - Save tool to favorites
+         - User dashboard (saved items)
+         - Collections
+      
+      5. DARK MODE
+         - Theme toggle
+         - CSS variables for theming
+         - Persist preference
+      
+      6. NEWSLETTER
+         - Signup form
+         - Email collection
+         - Success states
+      
+      الملفات:
+      - src/app/auth/ (login, register, profile)
+      - src/contexts/ThemeContext.tsx
+      - src/components/ (reviews, favorites)
+      - src/app/api/newsletter/
+      
+      تأكد كل feature تعمل صح
+    assigned_to: coder
+    depends_on: [landing-page-redesign]
+    verified_by: verifier
+    verify_prompt: 'تأكد كل الـ features شغالة بدون errors'
+    timeout_ms: 3000000
+
+  - id: content-system
+    title: 'ابنِ نظام المحتوى'
+    prompt: |
+      طبق نظام محتويات متكامل:
+      
+      1. ARTICLES SYSTEM
+         - Article listing page (src/app/blog/page.tsx)
+         - Article detail page (src/app/blog/[slug]/page.tsx)
+         - Author attribution
+         - Reading time calculation
+         - Related articles
+      
+      2. COMMENTS
+         - Comments section
+         - Add comment form
+         - Display comments
+         - Reply functionality
+      
+      3. TOOLS DETAIL
+         - Tool page (src/app/tools/[slug]/page.tsx)
+         - Pricing info
+         - Alternatives
+         - User reviews
+         - External link
+      
+      4. CATEGORIES
+         - Category pages
+         - Sub-categories
+         - Category filtering
+      
+      5. SEO
+         - Meta tags
+         - OG images
+         - Sitemap
+         - Structured data
+      
+      الملفات:
+      - src/app/blog/
+      - src/app/tools/[slug]/
+      - src/app/categories/
+      - src/components/comments/
+      - src/lib/seo/
+    assigned_to: coder
+    depends_on: [landing-page-redesign]
+    verified_by: verifier
+    verify_prompt: 'تأكد كل الصفحات شغالة مع بيانات واقعية'
+    timeout_ms: 2400000
+
+  - id: e2e-testing
+    title: 'اختبار شامل End-to-End'
+    prompt: |
+      اختبر كل حاجة في المنصة:
+      
+      1. NAVIGATION
+         - كل الروابط تعمل
+         - لا dead ends
+         - Breadcrumbs
+      
+      2. FUNCTIONALITY
+         - Search يعمل
+         - Filters تعمل
+         - Auth flow كامل
+         - Dark mode toggles
+         - Newsletter signup
+      
+      3. RESPONSIVE
+         - Mobile view
+         - Tablet view
+         - Desktop view
+      
+      4. PERFORMANCE
+         - Page load speed
+         - No console errors
+         - Images load
+      
+      5. ACCESSIBILITY
+         - Arabic text renders correct
+         - RTL works everywhere
+         - Keyboard navigation
+      
+      أخرج تقرير في testing/e2e-report.md
+      
+      استخدم: Playwright أو manual testing
+    assigned_to: verifier
+    depends_on: [landing-page-redesign, core-features, content-system]
+    verified_by: general
+    verify_prompt: 'تأكد من جودة التقرير'
+    timeout_ms: 1800000
+
+  - id: final-delivery
+    title: 'لخص النتائج'
+    prompt: |
+      اجمع كل الـ deliverables في تقرير نهائي:
+      
+      1. ملخص الـ features الجديدة
+      2. الـ design system
+      3. المشاكل اللي اتحلت
+      4. Recommendations للمتابعة
+      
+      أخرج في: DELIVERY.md
+      
+      ثم أخرج deliverable.md مع path لكل ملف تم إنشاؤه/تعديله
+    assigned_to: general
+    depends_on: [landing-page-redesign, core-features, content-system, e2e-testing]
+    verified_by: verifier
+    verify_prompt: 'تأكد التقرير شامل ودقيق'
+    timeout_ms: 600000
