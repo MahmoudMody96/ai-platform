@@ -8,22 +8,27 @@ import { createBrowserClient } from '@supabase/ssr';
 // Types
 // ============================================================================
 
-export interface AdminUser {
+export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'editor' | 'user';
+  username?: string;
   avatar_url?: string;
+  bio?: string;
+  plan: 'free' | 'pro' | 'team';
+  role: 'admin' | 'editor' | 'user';
 }
 
 interface AuthContextType {
-  user: AdminUser | null;
+  user: UserProfile | null;
   isLoading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
   clearError: () => void;
 }
 
@@ -49,7 +54,7 @@ function createSupabaseBrowserClient() {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<AdminUser | null>(null);
+  const [user, setUser] = React.useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const supabaseRef = React.useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
@@ -64,6 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Build user profile from session
+  const buildUser = React.useCallback((sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): UserProfile => {
+    return {
+      id: sessionUser.id,
+      email: sessionUser.email ?? '',
+      name: (sessionUser.user_metadata?.full_name as string) ?? sessionUser.email?.split('@')[0] ?? 'User',
+      username: sessionUser.user_metadata?.username as string | undefined,
+      avatar_url: sessionUser.user_metadata?.avatar_url as string | undefined,
+      bio: sessionUser.user_metadata?.bio as string | undefined,
+      plan: (sessionUser.user_metadata?.plan as 'free' | 'pro' | 'team') ?? 'free',
+      role: (sessionUser.user_metadata?.role as 'admin' | 'editor' | 'user') ?? 'user',
+    };
+  }, []);
+
   // Check for existing session on mount
   React.useEffect(() => {
     if (!supabaseRef.current) {
@@ -73,19 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const supabase = supabaseRef.current;
 
-    // Get initial session
     const initSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const adminUser: AdminUser = {
-            id: session.user.id,
-            email: session.user.email ?? '',
-            name: session.user.user_metadata?.full_name ?? session.user.email?.split('@')[0] ?? 'User',
-            role: (session.user.user_metadata?.role as 'admin' | 'editor' | 'user') ?? 'user',
-            avatar_url: session.user.user_metadata?.avatar_url,
-          };
-          setUser(adminUser);
+          setUser(buildUser(session.user));
         }
       } catch {
         // Session check failed
@@ -96,18 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initSession();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          const adminUser: AdminUser = {
-            id: session.user.id,
-            email: session.user.email ?? '',
-            name: session.user.user_metadata?.full_name ?? session.user.email?.split('@')[0] ?? 'User',
-            role: (session.user.user_metadata?.role as 'admin' | 'editor' | 'user') ?? 'user',
-            avatar_url: session.user.user_metadata?.avatar_url,
-          };
-          setUser(adminUser);
+          setUser(buildUser(session.user));
         } else {
           setUser(null);
         }
@@ -118,9 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [buildUser]);
 
-  // Clear error helper
   const clearError = React.useCallback(() => {
     setError(null);
   }, []);
@@ -147,29 +149,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.user) {
-        const adminUser: AdminUser = {
-          id: data.user.id,
-          email: data.user.email ?? '',
-          name: data.user.user_metadata?.full_name ?? data.user.email?.split('@')[0] ?? 'User',
-          role: (data.user.user_metadata?.role as 'admin' | 'editor' | 'user') ?? 'user',
-          avatar_url: data.user.user_metadata?.avatar_url,
-        };
-        setUser(adminUser);
-        router.push('/admin');
+        setUser(buildUser(data.user));
         return { success: true };
       }
 
       return { success: false, error: 'Login failed' };
-    } catch (err) {
+    } catch {
       const errorMessage = 'حدث خطأ غير متوقع أثناء تسجيل الدخول';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [buildUser]);
 
-  // Sign up (admin creation)
+  // Sign up (user registration)
   const signUp = React.useCallback(async (email: string, password: string, name: string) => {
     if (!supabaseRef.current) {
       return { success: false, error: 'Supabase not configured' };
@@ -185,7 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: {
             full_name: name,
-            role: 'admin',
+            role: 'user',
+            plan: 'free',
           },
         },
       });
@@ -197,32 +192,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.user) {
-        const adminUser: AdminUser = {
-          id: data.user.id,
-          email: data.user.email ?? '',
-          name,
-          role: 'admin',
-        };
-        setUser(adminUser);
-        router.push('/admin');
+        setUser(buildUser(data.user));
         return { success: true };
       }
 
       return { success: true }; // Email confirmation required
-    } catch (err) {
+    } catch {
       const errorMessage = 'حدث خطأ غير متوقع أثناء إنشاء الحساب';
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [buildUser]);
+
+  // Sign in with Google OAuth
+  const signInWithGoogle = React.useCallback(async () => {
+    if (!supabaseRef.current) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+      const { error: googleError } = await supabaseRef.current.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${siteUrl}/auth/callback`,
+        },
+      });
+
+      if (googleError) {
+        const errorMessage = getAuthErrorMessage(googleError.message);
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      return { success: true };
+    } catch {
+      const errorMessage = 'حدث خطأ غير متوقع أثناء تسجيل الدخول بـ Google';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Sign out
   const signOut = React.useCallback(async () => {
     if (!supabaseRef.current) {
       setUser(null);
-      router.push('/admin/login');
+      router.push('/');
       return;
     }
 
@@ -231,17 +253,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabaseRef.current.auth.signOut();
       setUser(null);
-      router.push('/admin/login');
+      router.push('/');
     } catch {
-      // Force logout anyway
       setUser(null);
-      router.push('/admin/login');
+      router.push('/');
     } finally {
       setIsLoading(false);
     }
   }, [router]);
 
-  // Reset password (request reset email)
+  // Reset password
   const resetPassword = React.useCallback(async (email: string) => {
     if (!supabaseRef.current) {
       return { success: false, error: 'Supabase not configured' };
@@ -253,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
       const { error: resetError } = await supabaseRef.current.auth.resetPasswordForEmail(email, {
-        redirectTo: `${siteUrl}/admin/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       });
 
       if (resetError) {
@@ -263,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return { success: true };
-    } catch (err) {
+    } catch {
       const errorMessage = 'حدث خطأ غير متوقع أثناء إرسال رابط استعادة كلمة المرور';
       setError(errorMessage);
       return { success: false, error: errorMessage };
@@ -271,6 +292,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+
+  // Update user profile
+  const updateProfile = React.useCallback(async (data: Partial<UserProfile>) => {
+    if (!supabaseRef.current || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error: updateError } = await supabaseRef.current.auth.updateUser({
+        data: {
+          full_name: data.name,
+          username: data.username,
+          avatar_url: data.avatar_url,
+          bio: data.bio,
+        },
+      });
+
+      if (updateError) {
+        const errorMessage = getAuthErrorMessage(updateError.message);
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+
+      setUser(prev => prev ? { ...prev, ...data } : null);
+      return { success: true };
+    } catch {
+      const errorMessage = 'حدث خطأ غير متوقع أثناء تحديث الملف الشخصي';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   return (
     <AuthContext.Provider
@@ -280,8 +337,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
         resetPassword,
+        updateProfile,
         clearError,
       }}
     >
@@ -302,9 +361,6 @@ export function useAuth() {
 // Helper Functions
 // ============================================================================
 
-/**
- * Convert Supabase auth error messages to Arabic
- */
 function getAuthErrorMessage(error: string): string {
   const errorLower = error.toLowerCase();
 
@@ -336,6 +392,5 @@ function getAuthErrorMessage(error: string): string {
     return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
   }
 
-  // Default Arabic message
   return 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى';
 }

@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Search, ArrowLeft, Layers, Users, Star, TrendingUp, Play } from 'lucide-react';
+import { ThemeToggle } from '@/contexts/ThemeContext';
+import { NewsletterForm } from '@/components/newsletter/NewsletterForm';
+import { useAuth } from '@/contexts/AuthContext';
 
 const categories = [
   { name: 'الكتابة', icon: '✍️', count: 150, color: '#6366F1' },
@@ -42,6 +45,7 @@ const stats = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = React.useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -73,7 +77,15 @@ export default function HomePage() {
               <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground">لوحة التحكم</Link>
             </nav>
             <div className="flex items-center gap-2">
-              <Link href="/admin"><Button size="sm">الدخول للأدمن</Button></Link>
+              <ThemeToggle variant="ghost" />
+              {user ? (
+                <Link href="/dashboard"><Button size="sm">لوحة التحكم</Button></Link>
+              ) : (
+                <>
+                  <Link href="/auth/login"><Button size="sm" variant="ghost">تسجيل الدخول</Button></Link>
+                  <Link href="/auth/register"><Button size="sm">إنشاء حساب</Button></Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -136,8 +148,8 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => (
-              <Link key={cat.name} href={`/tools?category=${cat.name}`}>
-                <Card className="group p-6 text-center hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+              <Link key={cat.name} href={`/tools?category=${encodeURIComponent(cat.name)}`}>
+                <Card className="group p-6 text-center hover:shadow-lg hover:-translate-y-1 cursor-pointer transition-all">
                   <div className="text-4xl mb-3">{cat.icon}</div>
                   <h3 className="font-semibold group-hover:text-primary">{cat.name}</h3>
                   <p className="text-sm text-muted-foreground">{cat.count} أداة</p>
@@ -170,13 +182,22 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <Badge variant={tool.pricing === 'free' ? 'success' : tool.pricing === 'freemium' ? 'info' : 'secondary'}>{tool.pricing === 'free' ? 'مجاني' : tool.pricing === 'freemium' ? 'مجاني + مدفوع' : 'مدفوع'}</Badge>
+                    <Badge variant={tool.pricing === 'free' ? 'success' : tool.pricing === 'freemium' ? 'info' : 'secondary'}>
+                      {tool.pricing === 'free' ? 'مجاني' : tool.pricing === 'freemium' ? 'مجاني + مدفوع' : 'مدفوع'}
+                    </Badge>
                     <div className="flex items-center gap-1"><Star className="w-4 h-4 text-accent fill-accent" />{tool.rating}</div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter CTA */}
+      <section className="py-20">
+        <div className="container-custom max-w-xl">
+          <NewsletterForm variant="card" />
         </div>
       </section>
 
