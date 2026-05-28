@@ -1,0 +1,239 @@
+28-05-2026 07:51:48:	---2---
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ***************************************
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ***************************************
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ********  Starting new session ********
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: Starting NGL in DISTILLER
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NGLAppVersion 26.1.21563.8
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NGLIMSClientID ngl_acrobat_dc1
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath Path relative to module path (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath Path from Registry (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath NGL CEF module path (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : AcroCEFPath, NGLCEFWorkflowModulePath - C:\Program Files\Adobe\Acrobat DC\Acrobat\AcroCEF C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: InitializeProfileUpdates With SuppressedUI
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : CheckingLicenseValidity from cache profile...
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printProfileData Profile ErrorCode : [401]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : 401 WORKFLOW_REQUIRED : PROFILE_EXPIRED : PROFILE_UNAVAILABLE : PROFILE_DENIED : PROFILE_OVERACTIVATED : PROFILE_LOCALE_RECONFIGURE : PROFILE_SIGNIN : PROFILE_SIGNOUT 408
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 :::::    NGL Fulfillment Data  
+  FIAcrobatStd:0  FIAcrobatPro:0  FIAcrobatGenAI:0  FIAcrobatStudio:0  FIAcrobatToolCreatePdf:0  FIAcrobatToolExportPdf:0  FIAcrobatToolCompressPdf:0  FIAcrobatToolProtectPdf:0
+  FIAcrobatStdFeatureIds : 
+  FIAcrobatProFeatureIds : 
+  FIAcrobatGenAIFeatureIds : 
+  FIAcrobatStudioFeatureIds : 
+  FIAcrobatToolCreatePdfFeatureIds : 
+  FIAcrobatToolExportPdfFeatureIds : 
+  FIAcrobatToolCompressPdfFeatureIds : 
+  FIAcrobatToolProtectPdfFeatureIds : 
+28-05-2026 07:51:48:	User / Password  NOT present
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printAMTData Result ErrorCode : [401]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:::::    AMTDataResult  
+ mRecommendedAppLocale : en_US
+ mLicenseDataFromProfile :: 
+{ 
+  mLicenseType  : LICENSE_TYPE_UNKNOWN
+  mLicenseVersion : 
+  mLicensePaidTermEndDate : -1
+  mOfflineGraceDuration : 0
+  mRemainingLicenseDuration : -1
+  mLicensedFeatures  : 
+  mProductID : 0
+  mSerialLocale : 
+  mAssociatedLocales : 
+  mLicensedPlatform  : SERIAL_PLATFORM_MLP
+  mInstallerScenarioKey : 0
+  mCustomerSegment : CUSTOMER_SEGMENT_END_USER
+  mCustomerIdentifier : 0
+  mProductDeliveryMethod : DELIVERY_METHOD_ESD
+  mIsRoyaltyBearingEnabled : 0
+  mIsProtectedContentEnabled : 0
+  mUserGuid : 
+  mUserAccountType : 
+  mNglDeviceId : 
+  mLicenseId : 
+  mLicenseExpiryTimestamp : 0
+  mAppEntitlementStatus : 
+  mActivationType : 
+  mLicenseExpiryWarningStartTimestamp : 0
+  mLicenseExpiryWarningInterval : 0
+ } 
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : WORKFLOW_REQUIRED
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : Processed Cached ProfileData
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : InitializeWorkflows with locale : en_US
+28-05-2026 07:51:48:	Closing File
+28-05-2026 07:51:48:	---2---
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ***************************************
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ***************************************
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ********  Starting new session ********
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: Starting NGL in DISTILLER
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NGLAppVersion 26.1.21563.8
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NGLIMSClientID ngl_acrobat_dc1
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath Path relative to module path (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath Path from Registry (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    SetNGLCEFWorkflowModulePath NGL CEF module path (C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow)
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : AcroCEFPath, NGLCEFWorkflowModulePath - C:\Program Files\Adobe\Acrobat DC\Acrobat\AcroCEF C:\Program Files\Adobe\Acrobat DC\Acrobat\NGL\cefWorkflow
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: InitializeProfileUpdates With SuppressedUI
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : CheckingLicenseValidity from cache profile...
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printProfileData Profile ErrorCode : [401]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : 401 WORKFLOW_REQUIRED : PROFILE_EXPIRED : PROFILE_UNAVAILABLE : PROFILE_DENIED : PROFILE_OVERACTIVATED : PROFILE_LOCALE_RECONFIGURE : PROFILE_SIGNIN : PROFILE_SIGNOUT 408
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 :::::    NGL Fulfillment Data  
+  FIAcrobatStd:0  FIAcrobatPro:0  FIAcrobatGenAI:0  FIAcrobatStudio:0  FIAcrobatToolCreatePdf:0  FIAcrobatToolExportPdf:0  FIAcrobatToolCompressPdf:0  FIAcrobatToolProtectPdf:0
+  FIAcrobatStdFeatureIds : 
+  FIAcrobatProFeatureIds : 
+  FIAcrobatGenAIFeatureIds : 
+  FIAcrobatStudioFeatureIds : 
+  FIAcrobatToolCreatePdfFeatureIds : 
+  FIAcrobatToolExportPdfFeatureIds : 
+  FIAcrobatToolCompressPdfFeatureIds : 
+  FIAcrobatToolProtectPdfFeatureIds : 
+28-05-2026 07:51:48:	User / Password  NOT present
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printAMTData Result ErrorCode : [401]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:::::    AMTDataResult  
+ mRecommendedAppLocale : en_US
+ mLicenseDataFromProfile :: 
+{ 
+  mLicenseType  : LICENSE_TYPE_UNKNOWN
+  mLicenseVersion : 
+  mLicensePaidTermEndDate : -1
+  mOfflineGraceDuration : 0
+  mRemainingLicenseDuration : -1
+  mLicensedFeatures  : 
+  mProductID : 0
+  mSerialLocale : 
+  mAssociatedLocales : 
+  mLicensedPlatform  : SERIAL_PLATFORM_MLP
+  mInstallerScenarioKey : 0
+  mCustomerSegment : CUSTOMER_SEGMENT_END_USER
+  mCustomerIdentifier : 0
+  mProductDeliveryMethod : DELIVERY_METHOD_ESD
+  mIsRoyaltyBearingEnabled : 0
+  mIsProtectedContentEnabled : 0
+  mUserGuid : 
+  mUserAccountType : 
+  mNglDeviceId : 
+  mLicenseId : 
+  mLicenseExpiryTimestamp : 0
+  mAppEntitlementStatus : 
+  mActivationType : 
+  mLicenseExpiryWarningStartTimestamp : 0
+  mLicenseExpiryWarningInterval : 0
+ } 
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : WORKFLOW_REQUIRED
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : Processed Cached ProfileData
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : InitializeWorkflows with locale : en_US
+28-05-2026 07:51:48:	Closing File
+28-05-2026 07:51:48:	---2---
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    Recieved workflowNotifier
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    workflowNotifier lNotificationId = 2
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    workflowNotifier send for AcroTray
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: HandleWorkflow starting ::: 
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    Recieved profileNotifier
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    profileNotifier lNotificationId = 2
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    profileNotifier send for AcroTray
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : CheckingLicenseValidity...
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printProfileData Profile ErrorCode : [404]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : 401 WORKFLOW_REQUIRED : PROFILE_EXPIRED : PROFILE_UNAVAILABLE : PROFILE_DENIED : PROFILE_OVERACTIVATED : PROFILE_LOCALE_RECONFIGURE : PROFILE_SIGNIN : PROFILE_SIGNOUT 408
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 :::::    NGL Fulfillment Data  
+  FIAcrobatStd:0  FIAcrobatPro:0  FIAcrobatGenAI:0  FIAcrobatStudio:0  FIAcrobatToolCreatePdf:0  FIAcrobatToolExportPdf:0  FIAcrobatToolCompressPdf:0  FIAcrobatToolProtectPdf:0
+  FIAcrobatStdFeatureIds : 
+  FIAcrobatProFeatureIds : 
+  FIAcrobatGenAIFeatureIds : 
+  FIAcrobatStudioFeatureIds : 
+  FIAcrobatToolCreatePdfFeatureIds : 
+  FIAcrobatToolExportPdfFeatureIds : 
+  FIAcrobatToolCompressPdfFeatureIds : 
+  FIAcrobatToolProtectPdfFeatureIds : 
+28-05-2026 07:51:48:	User / Password  NOT present
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printAMTData Result ErrorCode : [404]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:::::    AMTDataResult  
+ mRecommendedAppLocale : en_US
+ mLicenseDataFromProfile :: 
+{ 
+  mLicenseType  : LICENSE_TYPE_NONE
+  mLicenseVersion : 
+  mLicensePaidTermEndDate : 0
+  mOfflineGraceDuration : 0
+  mRemainingLicenseDuration : -1779987111570
+  mLicensedFeatures  : 
+  mProductID : 0
+  mSerialLocale : 
+  mAssociatedLocales : 
+  mLicensedPlatform  : SERIAL_PLATFORM_MLP
+  mInstallerScenarioKey : 0
+  mCustomerSegment : CUSTOMER_SEGMENT_END_USER
+  mCustomerIdentifier : 0
+  mProductDeliveryMethod : DELIVERY_METHOD_HARD_GOOD
+  mIsRoyaltyBearingEnabled : 0
+  mIsProtectedContentEnabled : 0
+  mUserGuid : 
+  mUserAccountType : 
+  mNglDeviceId : 652985e26aed7ca9200d78a55e3e2eb7b26befcd03e8ecbb1b2d8bfcef4a8f99
+  mLicenseId : 
+  mLicenseExpiryTimestamp : 0
+  mAppEntitlementStatus : 
+  mActivationType : 
+  mLicenseExpiryWarningStartTimestamp : 0
+  mLicenseExpiryWarningInterval : 0
+ } 
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NglStatusCode::PROFILE_DENIED
+28-05-2026 07:51:48:	Entitlement is 1
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ACROBAT LICENSE CHANGE NOTIFICATION : Entitlement is Reader/Residue.
+28-05-2026 07:51:48:	Closing File
+28-05-2026 07:51:48:	---2---
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    Recieved workflowNotifier
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    workflowNotifier lNotificationId = 2
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    workflowNotifier send for AcroTray
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: HandleWorkflow starting ::: 
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    Recieved profileNotifier
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    profileNotifier lNotificationId = 2
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:    profileNotifier send for AcroTray
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : CheckingLicenseValidity...
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printProfileData Profile ErrorCode : [404]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130 : 401 WORKFLOW_REQUIRED : PROFILE_EXPIRED : PROFILE_UNAVAILABLE : PROFILE_DENIED : PROFILE_OVERACTIVATED : PROFILE_LOCALE_RECONFIGURE : PROFILE_SIGNIN : PROFILE_SIGNOUT 408
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 :::::    NGL Fulfillment Data  
+  FIAcrobatStd:0  FIAcrobatPro:0  FIAcrobatGenAI:0  FIAcrobatStudio:0  FIAcrobatToolCreatePdf:0  FIAcrobatToolExportPdf:0  FIAcrobatToolCompressPdf:0  FIAcrobatToolProtectPdf:0
+  FIAcrobatStdFeatureIds : 
+  FIAcrobatProFeatureIds : 
+  FIAcrobatGenAIFeatureIds : 
+  FIAcrobatStudioFeatureIds : 
+  FIAcrobatToolCreatePdfFeatureIds : 
+  FIAcrobatToolExportPdfFeatureIds : 
+  FIAcrobatToolCompressPdfFeatureIds : 
+  FIAcrobatToolProtectPdfFeatureIds : 
+28-05-2026 07:51:48:	User / Password  NOT present
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: == printAMTData Result ErrorCode : [404]
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130:::::    AMTDataResult  
+ mRecommendedAppLocale : en_US
+ mLicenseDataFromProfile :: 
+{ 
+  mLicenseType  : LICENSE_TYPE_NONE
+  mLicenseVersion : 
+  mLicensePaidTermEndDate : 0
+  mOfflineGraceDuration : 0
+  mRemainingLicenseDuration : -1779987111565
+  mLicensedFeatures  : 
+  mProductID : 0
+  mSerialLocale : 
+  mAssociatedLocales : 
+  mLicensedPlatform  : SERIAL_PLATFORM_MLP
+  mInstallerScenarioKey : 0
+  mCustomerSegment : CUSTOMER_SEGMENT_END_USER
+  mCustomerIdentifier : 0
+  mProductDeliveryMethod : DELIVERY_METHOD_HARD_GOOD
+  mIsRoyaltyBearingEnabled : 0
+  mIsProtectedContentEnabled : 0
+  mUserGuid : 
+  mUserAccountType : 
+  mNglDeviceId : 652985e26aed7ca9200d78a55e3e2eb7b26befcd03e8ecbb1b2d8bfcef4a8f99
+  mLicenseId : 
+  mLicenseExpiryTimestamp : 0
+  mAppEntitlementStatus : 
+  mActivationType : 
+  mLicenseExpiryWarningStartTimestamp : 0
+  mLicenseExpiryWarningInterval : 0
+ } 
+28-05-2026 07:51:48:	AcroNGL Integ ADC-4240758 : NglStatusCode::PROFILE_DENIED
+28-05-2026 07:51:48:	Entitlement is 1
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: ACROBAT LICENSE CHANGE NOTIFICATION : Entitlement is Reader/Residue.
+28-05-2026 07:51:48:	Closing File
+28-05-2026 07:51:48:	---2---
+28-05-2026 07:51:48:	DistNGL Integ ADC-4248130: Processed profile for Acrotray... 
+28-05-2026 09:01:48:	DistNGL Integ ADC-4248130 : Quitting Acrotray per quitTimer.

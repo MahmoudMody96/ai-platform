@@ -1,0 +1,124 @@
+﻿version: 1
+plan:
+  name: 'اصلاح bugs منصة AI Platform'
+  max_concurrency: 10
+  max_consecutive_failures: 2
+  max_cycles: 10
+tasks:
+  - id: core-fixes
+    title: 'اصلاح مشاكل الـ Auth والـ Navigation'
+    prompt: |
+      اصلح المشاكل دي في منصة AI Platform في مجلد D:\MAHMOUD\projects\ai-platform:
+      
+      1. **middleware → proxy**: 
+         - Rename src/middleware.ts to src/proxy.ts
+         - Update the export from `middleware` to `proxy`
+      
+      2. **AuthContext cookie security** (src/contexts/AuthContext.tsx):
+         - أضف `Secure` flag للـ cookie في السطر 57:
+           document.cookie = `admin_auth=${DEMO_ADMIN.id}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+      
+      3. **Fix admin/layout.tsx hydration issue** (src/app/admin/layout.tsx):
+         - السطر 16: الـ pathname بيُستخدم قبل check الـ auth
+         - غيّر الـ logic بحيث الـ pathname check يكون داخل useEffect أو useEffect قبله
+      
+      4. **Fix home page navigation** (src/app/page.tsx):
+         - السطر 139: غيّر href من `/admin/tools?category=${cat.name}` إلى `/tools?category=${cat.name}`
+      
+      5. **Fix utils security** (src/lib/utils/index.ts):
+         - السطر 99-106: استخدم crypto.getRandomValues() بدل Math.random() في generateApiKey
+      
+      بعد كل تعديل، تأكد إن الكود بيشتغل صح.
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع كل التغييرات في الملفات دي:
+      - src/proxy.ts (الـ rename من middleware.ts)
+      - src/contexts/AuthContext.tsx
+      - src/app/admin/layout.tsx
+      - src/app/page.tsx
+      - src/lib/utils/index.ts
+      
+      لكل تغيير:
+      1. تأكد إن الـ rename تم صح
+      2. تأكد إن الـ cookie security مضاف صح
+      3. تأكد إن الـ hydration issue اتصلح (pathname check في useEffect)
+      4. تأكد إن الـ links صح
+      5. تأكد إن generateApiKey تستخدم crypto
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: component-fixes
+    title: 'اصلاح مشاكل الـ UI Components'
+    prompt: |
+      اصلح المشاكل دي في منصة AI Platform في مجلد D:\MAHMOUD\projects\ai-platform:
+      
+      1. **إصلاح الـ Input component** (src/components/ui/input.tsx):
+         - أضف دعم للـ `icon` prop (اختياري)
+         - مثال: <Input icon={<Search />} />
+      
+      2. **إصلاح الـ DataTable keyField** (src/components/ui/data-table.tsx):
+         - تأكد إن الـ prop اسمها `keyField` وليس `rowKey` أو `idKey`
+         - أو غيّر usage في admin/pages
+      
+      3. **إصلاح Settings checkboxes** (src/app/admin/settings/page.tsx):
+         - استخدم Radix UI Switch component بدل native input
+         - أضف proper labels and accessibility
+      
+      4. **توحيد الـ badge classes** في admin pages:
+         - admin/articles/page.tsx
+         - admin/users/page.tsx
+         - admin/comments/page.tsx
+         - استبدل bg-error-light بـ bg-destructive/10
+         - استبدل text-error بـ text-destructive
+      
+      5. **إصلاح Tabs styling** في settings page:
+         - تأكد إن الـ TabsList بيستخدم justify-start مش center
+      
+      تأكد إن كل الكود بيشتغل بدون أخطاء TypeScript.
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع كل التغييرات في الملفات دي:
+      - src/components/ui/input.tsx
+      - src/components/ui/data-table.tsx
+      - src/app/admin/settings/page.tsx
+      - src/app/admin/articles/page.tsx
+      - src/app/admin/users/page.tsx
+      - src/app/admin/comments/page.tsx
+      
+      لكل تغيير:
+      1. تأكد إن الـ Input component يدعم icon prop
+      2. تأكد إن الـ DataTable keyField شغّال
+      3. تأكد إن الـ Switch component مستخدم صح
+      4. تأكد إن الـ badge classes صحيحة
+      5. تأكد إن TypeScript لا يظهر أخطاء
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: build-verification
+    title: 'تاكيد نجاح البناء'
+    prompt: |
+      بعد ما الـ core-fixes و component-fixes يتكملوا، شغّل:
+      
+      cd D:\MAHMOUD\projects\ai-platform; npm run build
+      
+      تأكد إن:
+      1. البناء ينجح بدون أخطاء
+      2. لا توجد تحذيرات (warnings) تتعلق بـ middleware/proxy
+      3. TypeScript check يمر بنجاح
+      
+      إذا كان فيه أخطاء، رجّع التفاصيل.
+    assigned_to: tester
+    depends_on: [core-fixes, component-fixes]
+    verified_by: verifier
+    verify_prompt: |
+      راجع نتائج البناء:
+      - npm run build output
+      - أي أخطاء أو تحذيرات
+      - TypeScript compilation
+      
+      تأكد إن كل المشاكل اللي اتصلحت في Task 1 و Task 2 لا تسبب مشاكل جديدة في البناء.
+    timeout_ms: 1800000

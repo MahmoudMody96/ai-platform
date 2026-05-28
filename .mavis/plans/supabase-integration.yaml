@@ -1,0 +1,312 @@
+﻿version: 1
+plan:
+  name: 'ربط المنصة بـ Supabase - Production Ready'
+  max_concurrency: 10
+  max_consecutive_failures: 2
+  max_cycles: 15
+tasks:
+  - id: db-schema
+    title: 'إنشاء Supabase Database Schema'
+    prompt: |
+      أنشئ Supabase database schema كامل لمنصة AI Platform في D:\MAHMOUD\projects\ai-platform
+      
+      أنشئ ملف src/lib/supabase/schema.sql مع:
+      
+      1. **Tables:**
+         - profiles (id, email, username, display_name, avatar_url, bio, plan, metadata, created_at, updated_at)
+         - categories (id, name, slug, description, icon, color, parent_id, sort_order, created_at)
+         - tools (id, name, slug, description, logo_url, website_url, documentation_url, pricing_model, monthly_price, category_id, tags, features, alternatives, stats_json, is_featured, is_verified, created_at, updated_at)
+         - articles (id, title, slug, excerpt, content, cover_image_url, author_id, category_id, tags, status, featured, read_time, published_at, created_at, updated_at)
+         - comments (id, content, article_id, tool_id, parent_id, author_id, is_approved, created_at, updated_at)
+         - favorites (id, user_id, article_id, tool_id, created_at)
+         - api_keys (id, name, key, prefix, user_id, permissions, rate_limit, expires_at, last_used_at, usage_count, is_active, created_at)
+         - api_logs (id, api_key_id, endpoint, method, status_code, ip_address, user_agent, request_body, response_body, duration_ms, created_at)
+         - notifications (id, user_id, type, title, body, data_json, is_read, created_at)
+         - activity_logs (id, action, entity_type, entity_id, user_id, details_json, created_at)
+      
+      2. **Row Level Security (RLS):**
+         - profiles: users can read their own profile, admins can read all
+         - tools: public read, authenticated can create/update own
+         - articles: public read, authenticated can create/update own
+         - comments: public read, authenticated can create, authors can delete own
+         - favorites: users can only see own favorites
+         - api_keys: users can only see own keys
+         - notifications: users can only see own notifications
+      
+      3. **Functions:**
+         - increment_api_usage(api_key_id)
+         - search_tools(query, category_id, pricing)
+         - get_dashboard_stats()
+      
+      4. **Triggers:**
+         - handle_new_user (on auth.users insert)
+         - update_updated_at (on row update)
+      
+      5. **Indexes:**
+         - tools(name, category_id, pricing_model)
+         - articles(title, author_id, status)
+         - comments(article_id, tool_id, author_id)
+      
+      يجب أن يكون الـ SQL متوافق مع Supabase (PostgreSQL).
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ SQL schema:
+      1. تأكد إن كل الـ tables عندها الـ proper constraints
+      2. تأكد إن الـ RLS policies صحيحة وآمنة
+      3. تأكد إن الـ indexes مناسبة للـ queries المتوقعة
+      4. تأكد من الـ SQL syntax
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: supabase-client
+    title: 'إنشاء Supabase Client Configuration'
+    prompt: |
+      أنشئ Supabase client setup في D:\MAHMOUD\projects\ai-platform
+      
+      1. أنشئ src/lib/supabase/client.ts:
+         - SupabaseClient singleton
+         - createClient function
+         - createBrowserClient (للبريد في الـ client)
+         - createServerClient (للسيرفر components)
+      
+      2. أنشئ src/lib/supabase/types.ts:
+         - TypeScript types محولة من الـ schema
+      
+      3. أنشئ src/lib/supabase/middleware.ts:
+         - Middleware helper للـ server-side auth
+      
+      4. أنشئ src/lib/supabase/helpers.ts:
+         - helper functions للـ common operations
+         - formatUser, getProfile, updateProfile
+      
+      5. أنشئ src/lib/supabase/queries.ts:
+         - pre-built queries للـ tools, articles, categories, etc.
+      
+      استخدم @supabase/supabase-js v2
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ client setup:
+      1. تأكد من الـ proper initialization
+      2. تأكد من الـ TypeScript types
+      3. تأكد من الـ middleware setup
+      4. تأكد من الـ helpers و queries
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: auth-context
+    title: 'تحديث AuthContext مع Supabase'
+    prompt: |
+      حدّث AuthContext في D:\MAHMOUD\projects\ai-platform
+      
+      1. src/contexts/AuthContext.tsx:
+         - استبدل localStorage auth بـ Supabase Auth
+         - استخدم useUser, useSession من @supabase/supabase-js
+         - أضف signIn, signUp, signOut, resetPassword functions
+         - استخدم cookies للتخزين الآمن
+         - أضف loading states
+         - أضف error handling
+      
+      2. src/app/admin/layout.tsx:
+         - أضف AuthProvider من Supabase
+         - أضف middleware protection
+         - أضف role-based access (admin, editor, user)
+      
+      3. src/app/admin/login/page.tsx:
+         - أضف email/password login via Supabase
+         - أضف OAuth providers (Google, GitHub) - optional
+         - أضف forgot password flow
+         - حذف demo credentials من الـ UI
+      
+      4. src/middleware.ts أو src/proxy.ts:
+         - أضف Supabase auth middleware
+         - حماية /admin/* routes
+    assigned_to: coder
+    depends_on: [db-schema, supabase-client]
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ Auth updates:
+      1. تأكد إن AuthContext شغال مع Supabase
+      2. تأكد من الـ login flow
+      3. تأكد من الـ middleware protection
+      4. تأكد إنه مش فيه demo credentials في الكود
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: api-routes
+    title: 'إنشاء API Routes مع Supabase'
+    prompt: |
+      أنشئ API routes في D:\MAHMOUD\projects\ai-platform\src\app\api
+      
+      1. /api/tools:
+         - GET: list tools with filters (category, pricing, search)
+         - POST: create tool (admin only)
+         - PUT: update tool (admin/editor)
+         - DELETE: delete tool (admin only)
+      
+      2. /api/articles:
+         - GET: list articles with filters
+         - POST: create article
+         - PUT: update article
+         - DELETE: delete article
+      
+      3. /api/categories:
+         - GET: list categories
+         - POST: create category (admin only)
+         - PUT: update category
+      
+      4. /api/users:
+         - GET: list users (admin only)
+         - PUT: update user role
+      
+      5. /api/search:
+         - POST: full-text search across tools and articles
+      
+      استخدم:
+      - Next.js Route Handlers (app/api/...)
+      - Supabase server client
+      - Zod validation
+      - proper error handling
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ API routes:
+      1. تأكد من الـ proper authentication
+      2. تأكد من الـ authorization (admin vs user)
+      3. تأكد من الـ validation
+      4. تأكد من الـ error handling
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: components-update
+    title: 'تحديث UI Components مع Real Data'
+    prompt: |
+      حدّث الـ UI components في D:\MAHMOUD\projects\ai-platform
+      
+      1. src/app/admin/tools/page.tsx:
+         - استبدل mockTools بـ Supabase queries
+         - أضف pagination
+         - أضف add/edit/delete dialogs
+         - أضف confirmation dialogs
+      
+      2. src/app/admin/articles/page.tsx:
+         - استبدل mockArticles بـ Supabase
+         - أضف rich text editor (optional)
+         - أضف featured toggle
+      
+      3. src/app/admin/users/page.tsx:
+         - استبدل mockUsers بـ Supabase
+         - أضف role management
+         - أضف plan management
+      
+      4. src/app/admin/categories/page.tsx:
+         - استبدل mockCategories بـ Supabase
+         - أضف drag & drop ordering
+      
+      5. src/app/admin/comments/page.tsx:
+         - استبدل mockComments بـ Supabase
+         - أضف approve/reject functionality
+      
+      6. src/app/admin/settings/page.tsx:
+         - أضف general settings form
+         - أضف email settings (SMTP config)
+         - أضف notification settings
+         - أضف appearance settings
+         - استخدم Radix Switch بدل native checkboxes
+      
+      7. src/app/admin/page.tsx (Dashboard):
+         - استبدل mockStats بـ get_dashboard_stats() function
+         - أضف real-time updates (optional - polling أو subscriptions)
+    assigned_to: coder
+    depends_on: [auth-context, api-routes]
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ UI updates:
+      1. تأكد إن كل الـ components بتاخد data من Supabase
+      2. تأكد من الـ loading states
+      3. تأكد من الـ error handling
+      4. تأكد من الـ pagination
+      5. تأكد من الـ CRUD operations
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
+    
+  - id: env-setup
+    title: 'إنشاء Environment Configuration'
+    prompt: |
+      أنشئ environment files في D:\MAHMOUD\projects\ai-platform
+      
+      1. تحديث .env.example:
+         NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+         NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+         SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+         NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      
+      2. أنشئ .env.local مع placeholders
+      
+      3. أنشئ .env.test
+      
+      4. أنشئ .env.production
+      
+      5. تحديث next.config.ts:
+         - أضف env variables handling
+         - أضف redirects for www vs non-www
+      
+      6. أنشئ src/config/index.ts:
+         - site configuration
+         - api endpoints
+         - feature flags
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      راجع الـ environment setup:
+      1. تأكد من proper variable names
+      2. تأكد من security (no secrets in client-side)
+      3. تأكد من proper fallback values
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1200000
+    
+  - id: testing
+    title: 'اختبار Integration'
+    prompt: |
+      اختبر الـ Supabase integration في D:\MAHMOUD\projects\ai-platform
+      
+      1. شغّل npm run build وتأكد من نجاحه
+      
+      2. اختبر:
+         - Login flow (email/password)
+         - Admin dashboard loading
+         - Tools CRUD
+         - Articles CRUD
+         - Categories CRUD
+         - Users management
+         - Settings page
+      
+      3. تأكد من:
+         - No TypeScript errors
+         - No console errors (غير warnings)
+         - Auth protection working
+         - RLS policies working
+      
+      4. أنشئ ملف TESTING.md مع:
+         - Setup instructions
+         - Test credentials
+         - API documentation
+    assigned_to: tester
+    depends_on: [db-schema, supabase-client, auth-context, api-routes, components-update, env-setup]
+    verified_by: verifier
+    verify_prompt: |
+      راجع نتائج الاختبار:
+      1. تأكد من successful build
+      2. تأكد من all flows working
+      3. تأكد من no security issues
+      4. تأكد من documentation complete
+      
+      DO NOT edit files. فقط راجع و report.
+    timeout_ms: 1800000
