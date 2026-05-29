@@ -1,157 +1,93 @@
 // =============================================
-// API Routes - Admin Users Management
-// GET: list users with filters
-// PUT: update user role/plan
-// DELETE: delete user
+// API - Admin Users Endpoints
 // =============================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, paginatedResponse } from '@/lib/api/response';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
+// Mock data
+const mockUsers = [
+  { id: '1', email: 'admin@aiplatform.com', display_name: 'مدير النظام', username: 'admin', avatar_url: null, plan: 'pro', role: 'admin', created_at: '2026-01-01', updated_at: '2026-05-20' },
+  { id: '2', email: 'ahmed@example.com', display_name: 'أحمد محمد', username: 'ahmed_m', avatar_url: null, plan: 'free', role: 'user', created_at: '2026-02-15', updated_at: '2026-05-18' },
+  { id: '3', email: 'sara@example.com', display_name: 'سارة أحمد', username: 'sara_ah', avatar_url: null, plan: 'pro', role: 'editor', created_at: '2026-03-01', updated_at: '2026-05-15' },
+  { id: '4', email: 'khaled@example.com', display_name: 'خالد علي', username: 'khaled', avatar_url: null, plan: 'team', role: 'user', created_at: '2026-03-10', updated_at: '2026-05-12' },
+  { id: '5', email: 'fatma@example.com', display_name: 'فاطمة حسن', username: 'fatma_h', avatar_url: null, plan: 'free', role: 'user', created_at: '2026-04-05', updated_at: '2026-05-10' },
+];
 
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '20');
-    const plan = searchParams.get('plan');
-    const search = searchParams.get('search');
-    const offset = (page - 1) * pageSize;
+let usersStore = [...mockUsers];
 
-    // Build query
-    let query = supabase
-      .from('profiles')
-      .select('*', { count: 'exact' });
-
-    // Apply filters
-    if (plan) {
-      query = query.eq('plan', plan);
-    }
-    if (search) {
-      query = query.or(`display_name.ilike.%${search}%,email.ilike.%${search}%,username.ilike.%${search}%`);
-    }
-
-    // Order by created_at desc and paginate
-    query = query.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-
-    const { data: users, error, count } = await query;
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(errorResponse('Failed to fetch users'), { status: 500 });
-    }
-
-    return NextResponse.json(paginatedResponse(users || [], { page, pageSize, totalCount: count || 0 }));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get('search');
+  const plan = searchParams.get('plan');
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '20');
+  
+  let filtered = [...usersStore];
+  
+  // Apply filters
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filtered = filtered.filter(u => 
+      u.email.toLowerCase().includes(searchLower) ||
+      u.display_name?.toLowerCase().includes(searchLower) ||
+      u.username?.toLowerCase().includes(searchLower)
+    );
   }
+  
+  if (plan) {
+    filtered = filtered.filter(u => u.plan === plan);
+  }
+  
+  // Pagination
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedUsers = filtered.slice(start, end);
+  
+  return NextResponse.json({
+    success: true,
+    data: paginatedUsers,
+    pagination: {
+      page,
+      pageSize,
+      totalCount: filtered.length,
+      totalPages: Math.ceil(filtered.length / pageSize),
+      hasNextPage: end < filtered.length,
+      hasPrevPage: page > 1,
+    },
+  });
 }
 
-// PUT /api/admin/users - Update user role/plan
-export async function PUT(request: NextRequest) {
+export async function PUT(request: Request) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication and role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
-    }
-
     const body = await request.json();
-    const { id, plan, role, display_name, username } = body;
-
-    if (!id) {
-      return NextResponse.json(errorResponse('User ID required'), { status: 400 });
+    const { id, ...updates } = body;
+    
+    const index = usersStore.findIndex(u => u.id === id);
+    
+    if (index === -1) {
+      return NextResponse.json({
+        success: false,
+        error: 'User not found',
+      }, { status: 404 });
     }
-
-    // Prevent updating own role
-    if (id === user.id && role && role !== profile.role) {
-      return NextResponse.json(errorResponse('Cannot change your own role'), { status: 400 });
-    }
-
-    // Update profile
-    const updateData: Record<string, unknown> = {};
-    if (plan !== undefined) updateData.plan = plan;
-    if (role !== undefined) updateData.role = role;
-    if (display_name !== undefined) updateData.display_name = display_name;
-    if (username !== undefined) updateData.username = username;
-
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Update error:', updateError);
-      return NextResponse.json(errorResponse('Failed to update user'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse(updatedProfile, 'User updated successfully'));
+    
+    const updatedUser = {
+      ...usersStore[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    
+    usersStore[index] = updatedUser;
+    
+    return NextResponse.json({
+      success: true,
+      data: updatedUser,
+    });
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
-  }
-}
-
-// DELETE /api/admin/users - Delete user
-export async function DELETE(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('id');
-
-    if (!userId) {
-      return NextResponse.json(errorResponse('User ID required'), { status: 400 });
-    }
-
-    // Check authentication and role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
-    }
-
-    // Prevent deleting own account
-    if (userId === user.id) {
-      return NextResponse.json(errorResponse('Cannot delete your own account'), { status: 400 });
-    }
-
-    // Delete user from auth (this will cascade to profiles)
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-
-    if (deleteError) {
-      console.error('Delete error:', deleteError);
-      return NextResponse.json(errorResponse('Failed to delete user'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse(null, 'User deleted successfully'));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+    console.error('Error updating user:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update user',
+    }, { status: 500 });
   }
 }

@@ -1,159 +1,91 @@
 // =============================================
-// API Routes - Admin Comments Management
-// GET: list comments with filters
-// PUT: approve/reject comment
-// DELETE: delete comment
+// API - Admin Comments Endpoints
 // =============================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { successResponse, errorResponse, paginatedResponse } from '@/lib/api/response';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
+// Mock data
+const mockComments = [
+  { id: '1', content: 'مقال رائع! شكراً على المعلومات المفيدة', article_id: '1', tool_id: null, parent_id: null, author_id: '2', is_approved: true, created_at: '2026-05-20T10:30:00Z', updated_at: '2026-05-20T10:30:00Z', author: { id: '2', display_name: 'أحمد محمد', email: 'ahmed@example.com', avatar_url: null } },
+  { id: '2', content: 'هل تنصح باستخدام الإصدار المجاني أم المدفوع؟', article_id: null, tool_id: '1', parent_id: null, author_id: '3', is_approved: false, created_at: '2026-05-21T14:15:00Z', updated_at: '2026-05-21T14:15:00Z', author: { id: '3', display_name: 'سارة أحمد', email: 'sara@example.com', avatar_url: null } },
+  { id: '3', content: 'أدوات رائعة! سأحاول استخدامها', article_id: '2', tool_id: null, parent_id: null, author_id: '4', is_approved: true, created_at: '2026-05-22T09:00:00Z', updated_at: '2026-05-22T09:00:00Z', author: { id: '4', display_name: 'خالد علي', email: 'khaled@example.com', avatar_url: null } },
+];
 
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '20');
-    const approved = searchParams.get('approved');
-    const entityType = searchParams.get('entityType');
-    const search = searchParams.get('search');
-    const offset = (page - 1) * pageSize;
+let commentsStore = [...mockComments];
 
-    // Build query
-    let query = supabase
-      .from('comments')
-      .select(`
-        *,
-        author:profiles(id, display_name, email, avatar_url),
-        article:articles(id, title, slug),
-        tool:tools(id, name, slug)
-      `, { count: 'exact' });
-
-    // Apply filters
-    if (approved !== undefined && approved !== null && approved !== '') {
-      query = query.eq('is_approved', approved === 'true');
-    }
-    if (entityType === 'article') {
-      query = query.not('article_id', 'is', null);
-    } else if (entityType === 'tool') {
-      query = query.not('tool_id', 'is', null);
-    }
-    if (search) {
-      query = query.or(`content.ilike.%${search}%`);
-    }
-
-    // Order and paginate
-    query = query.order('created_at', { ascending: false }).range(offset, offset + pageSize - 1);
-
-    const { data: comments, error, count } = await query;
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(errorResponse('Failed to fetch comments'), { status: 500 });
-    }
-
-    return NextResponse.json(paginatedResponse(comments || [], { page, pageSize, totalCount: count || 0 }));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get('search');
+  const approved = searchParams.get('approved');
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '20');
+  
+  let filtered = [...commentsStore];
+  
+  // Apply filters
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filtered = filtered.filter(c => 
+      c.content.toLowerCase().includes(searchLower) ||
+      c.author?.display_name?.toLowerCase().includes(searchLower)
+    );
   }
+  
+  if (approved !== null && approved !== undefined) {
+    const isApproved = approved === 'true';
+    filtered = filtered.filter(c => c.is_approved === isApproved);
+  }
+  
+  // Pagination
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedComments = filtered.slice(start, end);
+  
+  return NextResponse.json({
+    success: true,
+    data: paginatedComments,
+    pagination: {
+      page,
+      pageSize,
+      totalCount: filtered.length,
+      totalPages: Math.ceil(filtered.length / pageSize),
+      hasNextPage: end < filtered.length,
+      hasPrevPage: page > 1,
+    },
+  });
 }
 
-// PUT /api/admin/comments - Update comment (approve/reject)
-export async function PUT(request: NextRequest) {
+export async function PUT(request: Request) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication and role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'editor'].includes(profile.role)) {
-      return NextResponse.json(errorResponse('Admin or editor access required'), { status: 403 });
-    }
-
     const body = await request.json();
-    const { id, is_approved, content } = body;
-
-    if (!id) {
-      return NextResponse.json(errorResponse('Comment ID required'), { status: 400 });
+    const { id, ...updates } = body;
+    
+    const index = commentsStore.findIndex(c => c.id === id);
+    
+    if (index === -1) {
+      return NextResponse.json({
+        success: false,
+        error: 'Comment not found',
+      }, { status: 404 });
     }
-
-    // Update comment
-    const updateData: Record<string, unknown> = {};
-    if (is_approved !== undefined) updateData.is_approved = is_approved;
-    if (content !== undefined) updateData.content = content;
-
-    const { data: comment, error: updateError } = await supabase
-      .from('comments')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Update error:', updateError);
-      return NextResponse.json(errorResponse('Failed to update comment'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse(comment, 'Comment updated successfully'));
+    
+    const updatedComment = {
+      ...commentsStore[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    
+    commentsStore[index] = updatedComment;
+    
+    return NextResponse.json({
+      success: true,
+      data: updatedComment,
+    });
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
-  }
-}
-
-// DELETE /api/admin/comments - Delete comment
-export async function DELETE(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const commentId = searchParams.get('id');
-
-    if (!commentId) {
-      return NextResponse.json(errorResponse('Comment ID required'), { status: 400 });
-    }
-
-    // Check authentication and role
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
-    }
-
-    // Delete comment
-    const { error: deleteError } = await supabase
-      .from('comments')
-      .delete()
-      .eq('id', commentId);
-
-    if (deleteError) {
-      console.error('Delete error:', deleteError);
-      return NextResponse.json(errorResponse('Failed to delete comment'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse(null, 'Comment deleted successfully'));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+    console.error('Error updating comment:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update comment',
+    }, { status: 500 });
   }
 }

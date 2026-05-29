@@ -1,10 +1,9 @@
 // =============================================
-// API - Categories Endpoints
+// API - Single Category Endpoint
 // =============================================
 
 import { NextResponse } from 'next/server';
 
-// Mock data
 const mockCategories = [
   { id: '1', name: 'الكتابة', slug: 'writing', description: 'أدوات لكتابة المحتوى', icon: '✍️', color: '#6366F1', sort_order: 1, parent_id: null, created_at: '2026-01-01' },
   { id: '2', name: 'التصميم', slug: 'design', description: 'أدوات التصميم الجرافيكي', icon: '🎨', color: '#EC4899', sort_order: 2, parent_id: null, created_at: '2026-01-01' },
@@ -20,57 +19,81 @@ const mockCategories = [
 
 let categoriesStore = [...mockCategories];
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const category = categoriesStore.find(c => c.id === id || c.slug === id);
   
-  let filtered = [...categoriesStore];
-  
-  // Apply search filter
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(c => 
-      c.name.toLowerCase().includes(searchLower) || 
-      c.description?.toLowerCase().includes(searchLower)
-    );
+  if (!category) {
+    return NextResponse.json({
+      success: false,
+      error: 'Category not found',
+    }, { status: 404 });
   }
-  
-  // Sort by sort_order
-  filtered.sort((a, b) => a.sort_order - b.sort_order);
   
   return NextResponse.json({
     success: true,
-    data: filtered,
+    data: category,
   });
 }
 
-export async function POST(request: Request) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const index = categoriesStore.findIndex(c => c.id === id);
+  
+  if (index === -1) {
+    return NextResponse.json({
+      success: false,
+      error: 'Category not found',
+    }, { status: 404 });
+  }
+  
   try {
     const body = await request.json();
     
-    const newCategory = {
-      id: String(Date.now()),
-      name: body.name || 'Untitled Category',
-      slug: body.slug || body.name?.toLowerCase().replace(/\s+/g, '-') || `category-${Date.now()}`,
-      description: body.description || null,
-      icon: body.icon || null,
-      color: body.color || '#6366f1',
-      sort_order: body.sort_order ?? categoriesStore.length,
-      parent_id: body.parent_id || null,
-      created_at: new Date().toISOString(),
+    const updatedCategory = {
+      ...categoriesStore[index],
+      ...body,
     };
     
-    categoriesStore.push(newCategory);
+    categoriesStore[index] = updatedCategory;
     
     return NextResponse.json({
       success: true,
-      data: newCategory,
-    }, { status: 201 });
+      data: updatedCategory,
+    });
   } catch (error) {
-    console.error('Error creating category:', error);
+    console.error('Error updating category:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to create category',
+      error: 'Failed to update category',
     }, { status: 500 });
   }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const index = categoriesStore.findIndex(c => c.id === id);
+  
+  if (index === -1) {
+    return NextResponse.json({
+      success: false,
+      error: 'Category not found',
+    }, { status: 404 });
+  }
+  
+  categoriesStore.splice(index, 1);
+  
+  return NextResponse.json({
+    success: true,
+    message: 'Category deleted successfully',
+  });
 }

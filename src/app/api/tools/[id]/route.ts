@@ -1,10 +1,10 @@
 // =============================================
-// API - Tools Endpoints
+// API - Single Tool Endpoint
 // =============================================
 
 import { NextResponse } from 'next/server';
 
-// Mock data - سيتم استبدالها بـ Supabase لاحقاً
+// Import shared store (in real app, this would be Supabase)
 const mockTools = [
   { id: '1', name: 'ChatGPT', slug: 'chatgpt', description: 'نموذج لغوي متقدم للكتابة والتحليل', logo_url: null, website_url: 'https://chat.openai.com', documentation_url: null, pricing_model: 'freemium', monthly_price: 20, category_id: '1', tags: ['writing', 'chat'], features: null, alternatives: null, stats: { uses: 1500000, rating: 4.8, reviews: 25000 }, is_featured: true, is_verified: true, created_at: '2026-01-15', updated_at: '2026-05-20' },
   { id: '2', name: 'Midjourney', slug: 'midjourney', description: 'توليد صور فنية مذهلة', logo_url: null, website_url: 'https://midjourney.com', documentation_url: null, pricing_model: 'paid', monthly_price: 30, category_id: '2', tags: ['image', 'design'], features: null, alternatives: null, stats: { uses: 890000, rating: 4.7, reviews: 15000 }, is_featured: true, is_verified: true, created_at: '2026-02-10', updated_at: '2026-05-18' },
@@ -18,96 +18,84 @@ const mockTools = [
   { id: '10', name: 'Runway', slug: 'runway', description: 'توليد وتحرير فيديوهات بالذكاء الاصطناعي', logo_url: null, website_url: 'https://runwayml.com', documentation_url: null, pricing_model: 'paid', monthly_price: 35, category_id: '6', tags: ['video', 'editing'], features: null, alternatives: null, stats: { uses: 310000, rating: 4.6, reviews: 6000 }, is_featured: false, is_verified: true, created_at: '2026-01-30', updated_at: '2026-05-17' },
 ];
 
-// In-memory store for CRUD operations
 let toolsStore = [...mockTools];
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const category = searchParams.get('category');
-  const pricing = searchParams.get('pricing');
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
-  const featured = searchParams.get('featured');
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const tool = toolsStore.find(t => t.id === id || t.slug === id);
   
-  let filtered = [...toolsStore];
-  
-  // Apply filters
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(t => 
-      t.name.toLowerCase().includes(searchLower) || 
-      t.description.toLowerCase().includes(searchLower)
-    );
+  if (!tool) {
+    return NextResponse.json({
+      success: false,
+      error: 'Tool not found',
+    }, { status: 404 });
   }
-  
-  if (category) {
-    filtered = filtered.filter(t => t.category_id === category);
-  }
-  
-  if (pricing) {
-    filtered = filtered.filter(t => t.pricing_model === pricing);
-  }
-  
-  if (featured === 'true') {
-    filtered = filtered.filter(t => t.is_featured);
-  }
-  
-  // Pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const paginatedTools = filtered.slice(start, end);
   
   return NextResponse.json({
     success: true,
-    data: paginatedTools,
-    pagination: {
-      page,
-      pageSize,
-      totalCount: filtered.length,
-      totalPages: Math.ceil(filtered.length / pageSize),
-      hasNextPage: end < filtered.length,
-      hasPrevPage: page > 1,
-    },
+    data: tool,
   });
 }
 
-export async function POST(request: Request) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const index = toolsStore.findIndex(t => t.id === id);
+  
+  if (index === -1) {
+    return NextResponse.json({
+      success: false,
+      error: 'Tool not found',
+    }, { status: 404 });
+  }
+  
   try {
     const body = await request.json();
     
-    const newTool = {
-      id: String(Date.now()),
-      name: body.name || 'Untitled Tool',
-      slug: body.slug || body.name?.toLowerCase().replace(/\s+/g, '-') || `tool-${Date.now()}`,
-      description: body.description || null,
-      logo_url: body.logo_url || null,
-      website_url: body.website_url || '',
-      documentation_url: body.documentation_url || null,
-      pricing_model: body.pricing_model || 'free',
-      monthly_price: body.monthly_price || null,
-      category_id: body.category_id || null,
-      tags: body.tags || [],
-      features: body.features || null,
-      alternatives: body.alternatives || null,
-      stats: { uses: 0, rating: 0, reviews: 0 },
-      is_featured: body.is_featured || false,
-      is_verified: false,
-      created_at: new Date().toISOString(),
+    const updatedTool = {
+      ...toolsStore[index],
+      ...body,
       updated_at: new Date().toISOString(),
     };
     
-    toolsStore.unshift(newTool);
+    toolsStore[index] = updatedTool;
     
     return NextResponse.json({
       success: true,
-      data: newTool,
-    }, { status: 201 });
+      data: updatedTool,
+    });
   } catch (error) {
-    console.error('Error creating tool:', error);
+    console.error('Error updating tool:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to create tool',
+      error: 'Failed to update tool',
     }, { status: 500 });
   }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const index = toolsStore.findIndex(t => t.id === id);
+  
+  if (index === -1) {
+    return NextResponse.json({
+      success: false,
+      error: 'Tool not found',
+    }, { status: 404 });
+  }
+  
+  toolsStore.splice(index, 1);
+  
+  return NextResponse.json({
+    success: true,
+    message: 'Tool deleted successfully',
+  });
 }

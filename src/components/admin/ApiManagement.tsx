@@ -53,6 +53,7 @@ export function ApiManagement() {
   const [newKey, setNewKey] = React.useState('');
   const [visibleKeys, setVisibleKeys] = React.useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [deleteKeyId, setDeleteKeyId] = React.useState<string | null>(null);
 
   const createApiKey = () => {
     const key = generateApiKey();
@@ -83,6 +84,11 @@ export function ApiManagement() {
     await copyToClipboard(key);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleDeleteKey = (id: string) => {
+    setApiKeys(apiKeys.filter(k => k.id !== id));
+    setDeleteKeyId(null);
   };
 
   return (
@@ -142,7 +148,12 @@ export function ApiManagement() {
                       <Button variant="ghost" size="icon-sm" onClick={() => copyKey(apiKey.key, apiKey.id)}>
                         {copiedId === apiKey.id ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
                       </Button>
-                      <Button variant="ghost" size="icon-sm" className="text-error hover:bg-error-light">
+                      <Button 
+                        variant="ghost" 
+                        size="icon-sm" 
+                        className="text-error hover:bg-error-light"
+                        onClick={() => setDeleteKeyId(apiKey.id)}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -251,6 +262,21 @@ export function ApiManagement() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+    {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteKeyId !== null} onOpenChange={(open) => !open && setDeleteKeyId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف مفتاح API</DialogTitle>
+            <DialogDescription>هل أنت متأكد من حذف هذا المفتاح؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="destructive" onClick={() => deleteKeyId && handleDeleteKey(deleteKeyId)} className="gap-2">
+              <Trash2 className="w-4 h-4" />حذف
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteKeyId(null)}>إلغاء</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

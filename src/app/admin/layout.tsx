@@ -1,84 +1,32 @@
 'use client';
 
+// =============================================
+// Admin Layout - Protected
+// =============================================
+
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/Sidebar';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-
-// ============================================================================
-// Supabase Session Provider (wraps children with Supabase listener)
-// ============================================================================
-
-function SupabaseSessionProvider({ children }: { children: React.ReactNode }) {
-  const supabaseRef = React.useRef<ReturnType<typeof createBrowserClient> | null>(null);
-  const [supabaseReady, setSupabaseReady] = React.useState(false);
-
-  React.useEffect(() => {
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        setSupabaseReady(true);
-        return;
-      }
-
-      supabaseRef.current = createBrowserClient(supabaseUrl, supabaseAnonKey);
-
-      // Subscribe to auth state changes to trigger AuthProvider updates
-      const { data: { subscription } } = supabaseRef.current.auth.onAuthStateChange(() => {
-        // AuthProvider will handle state updates via its own listener
-      });
-
-      setSupabaseReady(true);
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    } catch {
-      setSupabaseReady(true);
-    }
-  }, []);
-
-  // Don't render children until Supabase client is ready
-  if (!supabaseReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
-
-// ============================================================================
-// Admin Content with Auth Check
-// ============================================================================
 
 function AdminContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading } = useAuth();
-  const [isClient, setIsClient] = React.useState(false);
-  const [pathname, setPathname] = React.useState('');
 
-  // Set client state on mount
-  React.useEffect(() => {
-    setIsClient(true);
-    setPathname(window.location.pathname);
-  }, []);
+  // Check if on login page - skip auth for login
+  const isLoginPage = pathname === '/admin/login';
 
-  // Check auth and redirect
+  // Redirect to login when not authenticated (skip for login page)
   React.useEffect(() => {
-    if (isClient && !isLoading && !user && pathname !== '/admin/login') {
+    if (!isLoading && !user && !isLoginPage) {
       router.push('/admin/login');
     }
-  }, [user, isLoading, router, isClient, pathname]);
+  }, [user, isLoading, router, isLoginPage]);
 
-  // Skip auth check on login page
-  if (isClient && pathname === '/admin/login') {
+  // Don't check auth on login page
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
@@ -118,16 +66,10 @@ function AdminContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ============================================================================
-// Layout Export
-// ============================================================================
-
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SupabaseSessionProvider>
-      <AuthProvider>
-        <AdminContent>{children}</AdminContent>
-      </AuthProvider>
-    </SupabaseSessionProvider>
+    <AuthProvider>
+      <AdminContent>{children}</AdminContent>
+    </AuthProvider>
   );
 }

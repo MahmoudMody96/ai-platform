@@ -1,304 +1,96 @@
 // =============================================
-// API Routes - Articles
-// GET: list articles with filters
-// POST: create article
-// PUT: update article
-// DELETE: delete article
+// API - Articles Endpoints
 // =============================================
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { articleFilterSchema, createArticleSchema, updateArticleSchema } from '@/lib/validation/schemas';
-import { successResponse, errorResponse, paginatedResponse } from '@/lib/api/response';
-import type { Article } from '@/types';
+import { NextResponse } from 'next/server';
 
-// GET /api/articles - List articles with filters
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
+// Mock data
+const mockArticles = [
+  { id: '1', title: 'مراجعة شاملة لـ ChatGPT', slug: 'review-chatgpt', excerpt: 'نظرة متعمقة على نموذج ChatGPT وقدراته', content: 'مقال مفصل عن ChatGPT...', cover_image_url: null, category_id: '1', tags: ['chatgpt', 'review'], status: 'published', featured: true, read_time: 8, author_id: '1', created_at: '2026-05-01', updated_at: '2026-05-20' },
+  { id: '2', title: 'أفضل أدوات توليد الصور بالذكاء الاصطناعي', slug: 'best-ai-image-generators', excerpt: 'قائمة بأفضل 10 أدوات لتوليد الصور', content: 'في هذا المقال نستعرض...', cover_image_url: null, category_id: '2', tags: ['images', 'ai'], status: 'published', featured: true, read_time: 12, author_id: '1', created_at: '2026-05-05', updated_at: '2026-05-18' },
+  { id: '3', title: 'كيف تستخدم Claude في العمل', slug: 'using-claude-at-work', excerpt: 'دليل عملي لاستخدام Claude في بيئة العمل', content: 'Claude من Anthropic...', cover_image_url: null, category_id: '1', tags: ['claude', 'guide'], status: 'draft', featured: false, read_time: 6, author_id: '1', created_at: '2026-05-10', updated_at: '2026-05-15' },
+];
 
-    // Parse and validate filters
-    const filters = articleFilterSchema.safeParse({
-      page: searchParams.get('page') || 1,
-      pageSize: searchParams.get('pageSize') || 20,
-      category: searchParams.get('category'),
-      status: searchParams.get('status'),
-      search: searchParams.get('search'),
-      featured: searchParams.get('featured'),
-      author: searchParams.get('author'),
-    });
+let articlesStore = [...mockArticles];
 
-    if (!filters.success) {
-      return NextResponse.json(
-        errorResponse('Invalid query parameters'),
-        { status: 400 }
-      );
-    }
-
-    const { page, pageSize, category, status, search, featured, author } = filters.data;
-    const offset = (page - 1) * pageSize;
-
-    // Build query
-    let query = supabase
-      .from('articles')
-      .select('*, author:profiles(*), category:categories(*)', { count: 'exact' });
-
-    // Apply filters
-    if (category) {
-      query = query.eq('category_id', category);
-    }
-    if (status) {
-      query = query.eq('status', status);
-    } else {
-      // Default to published only for public access
-      query = query.eq('status', 'published');
-    }
-    if (featured !== undefined) {
-      query = query.eq('featured', featured);
-    }
-    if (author) {
-      query = query.eq('author_id', author);
-    }
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
-    }
-
-    // Order by published_at desc and paginate
-    query = query
-      .order('published_at', { ascending: false, nullsFirst: false })
-      .range(offset, offset + pageSize - 1);
-
-    const { data: articles, error, count } = await query;
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        errorResponse('Failed to fetch articles'),
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      paginatedResponse<Article>(articles || [], { page, pageSize, totalCount: count || 0 })
-    );
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(
-      errorResponse('Internal server error'),
-      { status: 500 }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get('search');
+  const category = searchParams.get('category');
+  const status = searchParams.get('status');
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '20');
+  
+  let filtered = [...articlesStore];
+  
+  // Apply filters
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filtered = filtered.filter(a => 
+      a.title.toLowerCase().includes(searchLower) || 
+      a.excerpt?.toLowerCase().includes(searchLower)
     );
   }
+  
+  if (category) {
+    filtered = filtered.filter(a => a.category_id === category);
+  }
+  
+  if (status) {
+    filtered = filtered.filter(a => a.status === status);
+  }
+  
+  // Pagination
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedArticles = filtered.slice(start, end);
+  
+  return NextResponse.json({
+    success: true,
+    data: paginatedArticles,
+    pagination: {
+      page,
+      pageSize,
+      totalCount: filtered.length,
+      totalPages: Math.ceil(filtered.length / pageSize),
+      hasNextPage: end < filtered.length,
+      hasPrevPage: page > 1,
+    },
+  });
 }
 
-// POST /api/articles - Create article
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    // Parse and validate body
     const body = await request.json();
-    const validated = createArticleSchema.safeParse(body);
-
-    if (!validated.success) {
-      return NextResponse.json(
-        errorResponse(`Validation error: ${validated.error.message}`),
-        { status: 400 }
-      );
-    }
-
-    // Verify user owns the article or is admin
-    if (validated.data.author_id !== user.id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profile?.role !== 'admin') {
-        return NextResponse.json(
-          errorResponse('You can only create articles as yourself'),
-          { status: 403 }
-        );
-      }
-    }
-
-    // Insert article
-    const { data: article, error: insertError } = await supabase
-      .from('articles')
-      .insert({
-        ...validated.data,
-        read_time: validated.data.content
-          ? Math.ceil(validated.data.content.trim().split(/\s+/).length / 200)
-          : 0,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      return NextResponse.json(
-        errorResponse('Failed to create article'),
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      successResponse<Article>(article, 'Article created successfully'),
-      { status: 201 }
-    );
+    
+    const newArticle = {
+      id: String(Date.now()),
+      title: body.title || 'Untitled Article',
+      slug: body.slug || body.title?.toLowerCase().replace(/\s+/g, '-') || `article-${Date.now()}`,
+      excerpt: body.excerpt || null,
+      content: body.content || null,
+      cover_image_url: body.cover_image_url || null,
+      category_id: body.category_id || null,
+      tags: body.tags || [],
+      status: body.status || 'draft',
+      featured: body.featured || false,
+      read_time: body.read_time || 5,
+      author_id: body.author_id || '1',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    articlesStore.unshift(newArticle);
+    
+    return NextResponse.json({
+      success: true,
+      data: newArticle,
+    }, { status: 201 });
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
-  }
-}
-
-// PUT /api/articles - Update article
-export async function PUT(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const articleId = searchParams.get('id');
-
-    if (!articleId) {
-      return NextResponse.json(errorResponse('Article ID required'), { status: 400 });
-    }
-
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    // Parse and validate body
-    const body = await request.json();
-    const validated = updateArticleSchema.safeParse(body);
-
-    if (!validated.success) {
-      return NextResponse.json(
-        errorResponse(`Validation error: ${validated.error.message}`),
-        { status: 400 }
-      );
-    }
-
-    // Get current article to check ownership
-    const { data: currentArticle } = await supabase
-      .from('articles')
-      .select('author_id')
-      .eq('id', articleId)
-      .single();
-
-    if (!currentArticle) {
-      return NextResponse.json(errorResponse('Article not found'), { status: 404 });
-    }
-
-    // Check permission: author or admin/editor
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    const isOwner = currentArticle.author_id === user.id;
-    const isPrivileged = profile && ['admin', 'editor'].includes(profile.role);
-
-    if (!isOwner && !isPrivileged) {
-      return NextResponse.json(
-        errorResponse('You do not have permission to update this article'),
-        { status: 403 }
-      );
-    }
-
-    // Update article
-    const { data: article, error: updateError } = await supabase
-      .from('articles')
-      .update({
-        ...validated.data,
-        read_time: validated.data.content
-          ? Math.ceil(validated.data.content.trim().split(/\s+/).length / 200)
-          : undefined,
-      })
-      .eq('id', articleId)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Update error:', updateError);
-      return NextResponse.json(errorResponse('Failed to update article'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse<Article>(article, 'Article updated successfully'));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
-  }
-}
-
-// DELETE /api/articles - Delete article
-export async function DELETE(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    const articleId = searchParams.get('id');
-
-    if (!articleId) {
-      return NextResponse.json(errorResponse('Article ID required'), { status: 400 });
-    }
-
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
-    }
-
-    // Get current article to check ownership
-    const { data: currentArticle } = await supabase
-      .from('articles')
-      .select('author_id')
-      .eq('id', articleId)
-      .single();
-
-    if (!currentArticle) {
-      return NextResponse.json(errorResponse('Article not found'), { status: 404 });
-    }
-
-    // Check permission: author or admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    const isOwner = currentArticle.author_id === user.id;
-    const isAdmin = profile?.role === 'admin';
-
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json(
-        errorResponse('You do not have permission to delete this article'),
-        { status: 403 }
-      );
-    }
-
-    // Delete article
-    const { error: deleteError } = await supabase
-      .from('articles')
-      .delete()
-      .eq('id', articleId);
-
-    if (deleteError) {
-      console.error('Delete error:', deleteError);
-      return NextResponse.json(errorResponse('Failed to delete article'), { status: 500 });
-    }
-
-    return NextResponse.json(successResponse(null, 'Article deleted successfully'));
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+    console.error('Error creating article:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to create article',
+    }, { status: 500 });
   }
 }
