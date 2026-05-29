@@ -14,11 +14,14 @@ const nextConfig: NextConfig = {
   // Redirect rules
   async redirects() {
     return [
-      // Redirect non-www to www (production)
+      // Redirect non-www to www (production only - not preview URLs)
       {
         source: "/((?!www).*)",
-        has: [{ type: "host", value: "^(?!www\\.).*" }],
-        destination: "https://www.:host$1",
+        has: [
+          { type: "host", value: "ai-platform\\.vercel\\.app" },
+          { type: "host", value: "www\\.ai-platform\\.vercel\\.app" },
+        ],
+        destination: "https://www.ai-platform.vercel.app$1",
         permanent: false,
       },
     ];
