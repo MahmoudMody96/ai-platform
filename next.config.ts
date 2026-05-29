@@ -11,21 +11,10 @@ const nextConfig: NextConfig = {
   // Use middleware.ts only (not proxy.ts)
   serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
 
-  // Redirect rules
-  async redirects() {
-    return [
-      // Redirect non-www to www (production only - not preview URLs)
-      {
-        source: "/((?!www).*)",
-        has: [
-          { type: "host", value: "ai-platform\\.vercel\\.app" },
-          { type: "host", value: "www\\.ai-platform\\.vercel\\.app" },
-        ],
-        destination: "https://www.ai-platform.vercel.app$1",
-        permanent: false,
-      },
-    ];
-  },
+  // Redirect rules - disabled for preview URLs
+  // async redirects() {
+  //   return [];
+  // },
 
   // Security headers
   async headers() {
