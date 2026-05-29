@@ -1,6 +1,6 @@
-# AI Platform - Arabic AI Platform
+# AI Platform - منصة الذكاء الاصطناعي العربية
 
-> منصة شاملة لأدوات الذكاء الاصطناعي مع لوحة تحكم كاملة
+> منصة شاملة لأدوات الذكاء الاصطناعي مع لوحة تحكم كاملة وإدارة API
 
 ## 🚀 Quick Start
 
@@ -18,105 +18,145 @@ ai-platform/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx              # Landing page
-│   │   ├── layout.tsx           # Root layout
-│   │   ├── globals.css          # Design system
-│   │   └── admin/               # Admin Dashboard
-│   │       ├── page.tsx         # Dashboard home
-│   │       ├── tools/           # Tools management
-│   │       ├── articles/        # Articles management
-│   │       ├── categories/      # Categories management
-│   │       ├── users/           # Users management
-│   │       ├── comments/        # Comments management
-│   │       ├── api/             # API Management ⭐
-│   │       └── settings/        # Settings
+│   │   ├── layout.tsx             # Root layout (RTL, Arabic)
+│   │   ├── globals.css            # Design system
+│   │   ├── tools/                # Tools pages
+│   │   │   ├── page.tsx          # Tools list
+│   │   │   └── [slug]/           # Tool detail
+│   │   ├── blog/                 # Blog pages
+│   │   ├── categories/           # Categories pages
+│   │   ├── dashboard/            # User dashboard
+│   │   ├── auth/                 # Authentication
+│   │   └── admin/                # Admin Dashboard
+│   │       ├── page.tsx          # Dashboard home
+│   │       ├── tools/            # Tools management
+│   │       ├── articles/         # Articles management
+│   │       ├── categories/       # Categories management
+│   │       ├── users/            # Users management
+│   │       ├── comments/         # Comments management
+│   │       ├── api/              # API Management
+│   │       └── settings/         # Settings
 │   ├── components/
 │   │   ├── ui/                  # UI components
 │   │   ├── admin/               # Admin components
-│   │   └── dashboard/           # Dashboard components
+│   │   ├── search/              # Search components
+│   │   ├── reviews/             # Reviews components
+│   │   └── favorites/          # Favorites components
 │   ├── lib/
-│   │   ├── utils/               # Utilities
-│   │   └── supabase/            # Supabase clients
+│   │   ├── utils.ts            # Utilities
+│   │   └── supabase/           # Supabase clients
 │   ├── hooks/                   # React hooks
+│   ├── contexts/                # React contexts (Auth)
 │   └── types/                   # TypeScript types
 ```
 
 ## ✨ Features
 
 ### Landing Page
-- Hero section with search
-- Statistics (tools, users, etc.)
-- Categories grid
-- Featured tools
-- Call-to-action
+- Hero section مع بحث متقدم
+- إحصائيات المنصة
+- شبكة الفئات
+- الأدوات المميزة
+- Call-to-action للتسجيل
+
+### Tools Pages (`/tools`)
+- عرض شبكي/قائمة للأدوات
+- بحث وفلترة متقدمة
+- صفحة تفاصيل كل أداة مع:
+  - المراجعات والتقييمات
+  - معلومات التسعير
+  - البدائل المشابهة
+  - مشاركة على السوشيال ميديا
 
 ### Admin Dashboard (`/admin`)
-- **Dashboard**: Stats, charts, recent activity
-- **Tools**: Add/Edit/Delete AI tools
-- **Articles**: Manage articles
-- **Categories**: Manage categories
-- **Users**: User management
-- **Comments**: Comment moderation
-- **API**: API keys management ⭐ (for Loxel automation)
-- **Settings**: Platform settings
+- **Dashboard**: إحصائيات، رسوم بيانية، النشاط الأخير
+- **Tools**: إضافة/تعديل/حذف أدوات AI
+- **Articles**: إدارة المقالات
+- **Categories**: إدارة الفئات
+- **Users**: إدارة المستخدمين
+- **Comments**: مراجعة التعليقات
+- **API**: إدارة مفاتيح API
+- **Settings**: إعدادات المنصة
 
-### API Management Section
+### API Endpoints
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  API Management                                             │
-├─────────────────────────────────────────────────────────────┤
-│  🔑 API Keys Tab                                            │
-│     - Create new API keys                                   │
-│     - View/Copy/Delete keys                                │
-│     - Rate limits                                           │
-│     - Last used tracking                                    │
-│                                                             │
-│  🔌 Endpoints Tab                                           │
-│     - GET /api/v1/tools                                     │
-│     - POST /api/v1/tools                                    │
-│     - GET /api/v1/articles                                 │
-│     - POST /api/v1/articles                                │
-│     - GET /api/v1/categories                               │
-│     - GET /api/v1/search                                   │
-│                                                             │
-│  📖 Docs Tab                                                │
-│     - Authentication guide                                  │
-│     - Usage examples (curl)                                 │
-│     - Rate limits                                           │
-│     - Response codes                                        │
-└─────────────────────────────────────────────────────────────┘
+Base URL: /api
+
+Tools:
+  GET    /tools           # List all tools
+  POST   /tools           # Create new tool
+  GET    /tools/[id]      # Get tool by ID
+  PUT    /tools/[id]      # Update tool
+  DELETE /tools/[id]      # Delete tool
+
+Articles:
+  GET    /articles        # List all articles
+  POST   /articles        # Create new article
+  GET    /articles/[id]   # Get article by ID
+  PUT    /articles/[id]   # Update article
+  DELETE /articles/[id]   # Delete article
+
+Categories:
+  GET    /categories      # List all categories
+  POST   /categories      # Create new category
+  GET    /categories/[id] # Get category by ID
+  PUT    /categories/[id] # Update category
+  DELETE /categories/[id] # Delete category
+
+Admin:
+  GET    /admin/users           # List users
+  PUT    /admin/users           # Update user
+  DELETE /admin/users/[id]      # Delete user
+  GET    /admin/comments        # List comments
+  PUT    /admin/comments        # Update comment
+  DELETE /admin/comments/[id]   # Delete comment
+
+Other:
+  GET    /search?q=            # Search tools/articles
+  POST   /newsletter           # Subscribe to newsletter
+  GET    /favorites            # User favorites
+  POST   /favorites            # Add to favorites
+  GET    /reviews              # Get reviews
+  POST   /reviews              # Create review
 ```
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 14 (App Router) |
-| UI | Tailwind CSS + Radix UI |
+| Framework | Next.js 16 (App Router) |
+| UI | Tailwind CSS + Custom Components |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth |
-| State | Zustand + React Query |
+| State | React Context + Hooks |
 | Icons | Lucide React |
+| TypeScript | Strict mode |
 
-## 📝 Usage
+## 📝 API Usage Examples
 
-### Add a Tool via API
+### List Tools
 ```bash
-curl -X POST 'http://localhost:3000/api/v1/tools' \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
+curl -X GET 'http://localhost:3000/api/tools'
+```
+
+### Create Tool
+```bash
+curl -X POST 'http://localhost:3000/api/tools' \
   -H 'Content-Type: application/json' \
   -d '{
-    "name": "New AI Tool",
-    "slug": "new-ai-tool",
-    "description": "Description here",
-    "pricing_model": "freemium",
-    "website_url": "https://example.com"
+    "name": "ChatGPT",
+    "slug": "chatgpt",
+    "description": "مساعد ذكي للمحادثة",
+    "pricing_type": "freemium",
+    "website_url": "https://chat.openai.com",
+    "category_id": "1"
   }'
 ```
 
-### List Tools via API
+### Search
 ```bash
-curl -X GET 'http://localhost:3000/api/v1/tools' \
-  -H 'Authorization: Bearer YOUR_API_KEY'
+curl -X GET 'http://localhost:3000/api/search?q=كتابة'
 ```
 
 ## 🎨 Design System
@@ -124,7 +164,13 @@ curl -X GET 'http://localhost:3000/api/v1/tools' \
 - **Colors**: Indigo (Primary), Cyan (Secondary), Amber (Accent)
 - **Direction**: RTL (Right-to-Left)
 - **Font**: IBM Plex Sans Arabic
-- **Components**: Card, Badge, Button, Input, DataTable, Modal
+- **Components**: Card, Badge, Button, Input, DataTable, Modal, Dialog
+
+## 🔐 Authentication
+
+- Demo credentials (development):
+  - Admin: `admin@aiplatform.com` / `admin123`
+  - User: `user@aiplatform.com` / `user123`
 
 ## 📄 License
 
