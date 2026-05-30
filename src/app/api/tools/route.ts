@@ -1,113 +1,227 @@
 // =============================================
 // API - Tools Endpoints
+// Connected to Supabase
 // =============================================
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { successResponse, errorResponse } from '@/lib/api/response';
+import { z } from 'zod';
 
-// Mock data - سيتم استبدالها بـ Supabase لاحقاً
-const mockTools = [
-  { id: '1', name: 'ChatGPT', slug: 'chatgpt', description: 'نموذج لغوي متقدم للكتابة والتحليل', logo_url: null, website_url: 'https://chat.openai.com', documentation_url: null, pricing_model: 'freemium', monthly_price: 20, category_id: '1', tags: ['writing', 'chat'], features: null, alternatives: null, stats: { uses: 1500000, rating: 4.8, reviews: 25000 }, is_featured: true, is_verified: true, created_at: '2026-01-15', updated_at: '2026-05-20' },
-  { id: '2', name: 'Midjourney', slug: 'midjourney', description: 'توليد صور فنية مذهلة', logo_url: null, website_url: 'https://midjourney.com', documentation_url: null, pricing_model: 'paid', monthly_price: 30, category_id: '2', tags: ['image', 'design'], features: null, alternatives: null, stats: { uses: 890000, rating: 4.7, reviews: 15000 }, is_featured: true, is_verified: true, created_at: '2026-02-10', updated_at: '2026-05-18' },
-  { id: '3', name: 'Claude', slug: 'claude', description: 'مساعد ذكي للتحليل والكتابة', logo_url: null, website_url: 'https://claude.ai', documentation_url: null, pricing_model: 'freemium', monthly_price: null, category_id: '1', tags: ['writing', 'analysis'], features: null, alternatives: null, stats: { uses: 750000, rating: 4.9, reviews: 12000 }, is_featured: true, is_verified: true, created_at: '2026-03-05', updated_at: '2026-05-22' },
-  { id: '4', name: 'GitHub Copilot', slug: 'github-copilot', description: 'مساعد برمجة بالذكاء الاصطناعي', logo_url: null, website_url: 'https://github.com/features/copilot', documentation_url: null, pricing_model: 'paid', monthly_price: 10, category_id: '3', tags: ['coding', 'development'], features: null, alternatives: null, stats: { uses: 500000, rating: 4.6, reviews: 8000 }, is_featured: false, is_verified: true, created_at: '2026-01-20', updated_at: '2026-05-15' },
-  { id: '5', name: 'DALL-E 3', slug: 'dall-e-3', description: 'توليد صور واقعية من النصوص', logo_url: null, website_url: 'https://openai.com/dall-e-3', documentation_url: null, pricing_model: 'paid', monthly_price: 15, category_id: '2', tags: ['image', 'design'], features: null, alternatives: null, stats: { uses: 620000, rating: 4.7, reviews: 11000 }, is_featured: true, is_verified: true, created_at: '2026-02-28', updated_at: '2026-05-19' },
-  { id: '6', name: 'ElevenLabs', slug: 'elevenlabs', description: 'أصوات AI واقعية للنصوص والكلام', logo_url: null, website_url: 'https://elevenlabs.io', documentation_url: null, pricing_model: 'freemium', monthly_price: null, category_id: '9', tags: ['audio', 'voice'], features: null, alternatives: null, stats: { uses: 420000, rating: 4.8, reviews: 9000 }, is_featured: false, is_verified: true, created_at: '2026-03-15', updated_at: '2026-05-21' },
-  { id: '7', name: 'Notion AI', slug: 'notion-ai', description: 'مساعد ذكي للعملاء وكتابة النصوص', logo_url: null, website_url: 'https://notion.so', documentation_url: null, pricing_model: 'paid', monthly_price: 10, category_id: '1', tags: ['writing', 'productivity'], features: null, alternatives: null, stats: { uses: 380000, rating: 4.5, reviews: 7000 }, is_featured: false, is_verified: true, created_at: '2026-01-25', updated_at: '2026-05-14' },
-  { id: '8', name: 'Canva AI', slug: 'canva-ai', description: 'تصميم جرافيك بالذكاء الاصطناعي', logo_url: null, website_url: 'https://canva.com', documentation_url: null, pricing_model: 'freemium', monthly_price: 13, category_id: '2', tags: ['design', 'graphics'], features: null, alternatives: null, stats: { uses: 520000, rating: 4.4, reviews: 11000 }, is_featured: false, is_verified: true, created_at: '2026-02-05', updated_at: '2026-05-16' },
-  { id: '9', name: 'Jasper', slug: 'jasper', description: 'كتابة محتوى تسويقي بالذكاء الاصطناعي', logo_url: null, website_url: 'https://jasper.ai', documentation_url: null, pricing_model: 'paid', monthly_price: 49, category_id: '5', tags: ['marketing', 'writing'], features: null, alternatives: null, stats: { uses: 290000, rating: 4.3, reviews: 5000 }, is_featured: false, is_verified: false, created_at: '2026-03-10', updated_at: '2026-05-12' },
-  { id: '10', name: 'Runway', slug: 'runway', description: 'توليد وتحرير فيديوهات بالذكاء الاصطناعي', logo_url: null, website_url: 'https://runwayml.com', documentation_url: null, pricing_model: 'paid', monthly_price: 35, category_id: '6', tags: ['video', 'editing'], features: null, alternatives: null, stats: { uses: 310000, rating: 4.6, reviews: 6000 }, is_featured: false, is_verified: true, created_at: '2026-01-30', updated_at: '2026-05-17' },
-];
+// Validation schema
+const toolsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  category: z.string().optional(),
+  pricing: z.enum(['free', 'freemium', 'paid', 'enterprise', 'contact']).optional(),
+  sort: z.enum(['newest', 'rating', 'popular', 'name']).default('newest'),
+  q: z.string().optional(),
+  tags: z.string().optional(),
+  featured: z.coerce.boolean().optional(),
+});
 
-// In-memory store for CRUD operations
-let toolsStore = [...mockTools];
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const category = searchParams.get('category');
-  const pricing = searchParams.get('pricing');
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
-  const featured = searchParams.get('featured');
-  
-  let filtered = [...toolsStore];
-  
-  // Apply filters
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(t => 
-      t.name.toLowerCase().includes(searchLower) || 
-      t.description.toLowerCase().includes(searchLower)
-    );
+    // Parse and validate query params
+    const params = toolsQuerySchema.parse({
+      page: searchParams.get('page') || 1,
+      pageSize: searchParams.get('pageSize') || 20,
+      category: searchParams.get('category') || undefined,
+      pricing: searchParams.get('pricing') || undefined,
+      sort: searchParams.get('sort') || 'newest',
+      q: searchParams.get('q') || undefined,
+      featured: searchParams.get('featured') || undefined,
+    });
+
+    const { page, pageSize, category, pricing, sort, q, tags, featured } = params;
+    const offset = (page - 1) * pageSize;
+
+    // Build query
+    let query = supabase
+      .from('tools')
+      .select(`
+        id,
+        name,
+        slug,
+        tagline,
+        description,
+        website_url,
+        logo_url,
+        pricing_type,
+        starting_price,
+        rating_avg,
+        rating_count,
+        is_featured,
+        created_at,
+        category:categories(id, name, slug, color)
+      `, { count: 'exact' })
+      .eq('status', 'published');
+
+    // Apply filters
+    if (category) {
+      // Get category by slug first
+      const { data: cat } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', category)
+        .single();
+      
+      if (cat) {
+        query = query.eq('category_id', cat.id);
+      }
+    }
+
+    if (pricing) {
+      query = query.eq('pricing_type', pricing);
+    }
+
+    if (featured !== undefined) {
+      query = query.eq('is_featured', featured);
+    }
+
+    if (q) {
+      query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,tagline.ilike.%${q}%`);
+    }
+
+    if (tags) {
+      const tagList = tags.split(',').map(t => t.trim());
+      query = query.overlaps('tags', tagList);
+    }
+
+    // Apply sorting
+    switch (sort) {
+      case 'newest':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'rating':
+        query = query.order('rating_avg', { ascending: false });
+        break;
+      case 'popular':
+        query = query.order('rating_count', { ascending: false });
+        break;
+      case 'name':
+        query = query.order('name', { ascending: true });
+        break;
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + pageSize - 1);
+
+    const { data: tools, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching tools:', error);
+      return NextResponse.json(errorResponse(error.message), { status: 500 });
+    }
+
+    const totalPages = Math.ceil((count || 0) / pageSize);
+
+    return NextResponse.json(successResponse({
+      data: tools || [],
+      meta: {
+        total: count || 0,
+        page,
+        limit: pageSize,
+        total_pages: totalPages,
+      },
+    }));
+  } catch (error) {
+    console.error('Tools API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
+    }
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
-  
-  if (category) {
-    filtered = filtered.filter(t => t.category_id === category);
-  }
-  
-  if (pricing) {
-    filtered = filtered.filter(t => t.pricing_model === pricing);
-  }
-  
-  if (featured === 'true') {
-    filtered = filtered.filter(t => t.is_featured);
-  }
-  
-  // Pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const paginatedTools = filtered.slice(start, end);
-  
-  return NextResponse.json({
-    success: true,
-    data: paginatedTools,
-    pagination: {
-      page,
-      pageSize,
-      totalCount: filtered.length,
-      totalPages: Math.ceil(filtered.length / pageSize),
-      hasNextPage: end < filtered.length,
-      hasPrevPage: page > 1,
-    },
-  });
 }
 
-export async function POST(request: Request) {
+// POST - Create new tool (Admin only)
+export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+
+    // Check auth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      return NextResponse.json(errorResponse('يرجى تسجيل الدخول أولاً'), { status: 401 });
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('غير مصرح'), { status: 403 });
+    }
+
     const body = await request.json();
-    
-    const newTool = {
-      id: String(Date.now()),
-      name: body.name || 'Untitled Tool',
-      slug: body.slug || body.name?.toLowerCase().replace(/\s+/g, '-') || `tool-${Date.now()}`,
-      description: body.description || null,
-      logo_url: body.logo_url || null,
-      website_url: body.website_url || '',
-      documentation_url: body.documentation_url || null,
-      pricing_model: body.pricing_model || 'free',
-      monthly_price: body.monthly_price || null,
-      category_id: body.category_id || null,
-      tags: body.tags || [],
-      features: body.features || null,
-      alternatives: body.alternatives || null,
-      stats: { uses: 0, rating: 0, reviews: 0 },
-      is_featured: body.is_featured || false,
-      is_verified: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    toolsStore.unshift(newTool);
-    
-    return NextResponse.json({
-      success: true,
-      data: newTool,
-    }, { status: 201 });
+
+    // Validation
+    const createSchema = z.object({
+      name: z.string().min(2).max(100),
+      slug: z.string().min(2).max(200).regex(/^[a-z0-9-]+$/).optional(),
+      tagline: z.string().max(150).optional(),
+      description: z.string().min(50).optional(),
+      website_url: z.string().url(),
+      logo_url: z.string().url().optional().nullable(),
+      category_id: z.string().uuid().optional().nullable(),
+      pricing_type: z.enum(['free', 'freemium', 'paid', 'enterprise', 'contact']).default('freemium'),
+      starting_price: z.number().min(0).optional().nullable(),
+      tags: z.array(z.string()).max(10).default([]),
+      features: z.array(z.object({ title: z.string(), desc: z.string() })).default([]),
+      is_featured: z.boolean().default(false),
+    });
+
+    const validated = createSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(errorResponse(validated.error.issues[0].message), { status: 400 });
+    }
+
+    // Generate slug if not provided
+    const slug = validated.data.slug || validated.data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\u0600-\u06FF]+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+
+    // Create tool
+    const { data: tool, error } = await supabase
+      .from('tools')
+      .insert({
+        name: validated.data.name,
+        slug,
+        tagline: validated.data.tagline || null,
+        description: validated.data.description || null,
+        website_url: validated.data.website_url,
+        logo_url: validated.data.logo_url || null,
+        category_id: validated.data.category_id || null,
+        pricing_type: validated.data.pricing_type,
+        starting_price: validated.data.starting_price || null,
+        tags: validated.data.tags,
+        features: validated.data.features,
+        is_featured: validated.data.is_featured,
+        status: 'pending',
+        submitted_by: session.user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating tool:', error);
+      return NextResponse.json(errorResponse(error.message), { status: 500 });
+    }
+
+    return NextResponse.json(
+      successResponse({ data: tool, message: 'تم إضافة الأداة بنجاح' }),
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Error creating tool:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create tool',
-    }, { status: 500 });
+    console.error('Create tool error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
 }

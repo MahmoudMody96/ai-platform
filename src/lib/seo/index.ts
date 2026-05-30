@@ -2,6 +2,7 @@
 // SEO Utilities - Meta Tags, OG Images, Structured Data
 // =============================================
 
+import { type Metadata } from 'next';
 import { type ClassValue } from 'clsx';
 
 // Tailwind merge helper
@@ -204,6 +205,54 @@ export function generateBreadcrumbStructuredData(items: BreadcrumbItem[]): strin
   };
 
   return JSON.stringify(schema);
+}
+
+// ============================================================================
+// Tool Metadata (Next.js Metadata API)
+// ============================================================================
+
+export interface ToolMetadataOptions {
+  name: string;
+  description?: string;
+  image?: string;
+  url: string;
+  category?: string;
+  rating?: number;
+  reviewCount?: number;
+  pricingModel?: 'free' | 'freemium' | 'paid' | 'contact';
+}
+
+export async function generateToolMetadata(tool: ToolMetadataOptions): Promise<Metadata> {
+  const fullTitle = `${tool.name} | ${SITE_CONFIG.name}`;
+  const fullUrl = `${SITE_CONFIG.url}${tool.url}`;
+  const fullImage = tool.image?.startsWith('http') 
+    ? tool.image 
+    : tool.image 
+      ? `${SITE_CONFIG.url}${tool.image}`
+      : undefined;
+
+  return {
+    title: fullTitle,
+    description: tool.description || SITE_CONFIG.description,
+    openGraph: {
+      title: fullTitle,
+      description: tool.description || SITE_CONFIG.description,
+      url: fullUrl,
+      siteName: SITE_CONFIG.name,
+      locale: SITE_CONFIG.locale,
+      type: 'website',
+      ...(fullImage && { images: [{ url: fullImage, width: 1200, height: 630 }] }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: fullTitle,
+      description: tool.description || SITE_CONFIG.description,
+      ...(fullImage && { images: [fullImage] }),
+    },
+    alternates: {
+      canonical: fullUrl,
+    },
+  };
 }
 
 // ============================================================================

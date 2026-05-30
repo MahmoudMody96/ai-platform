@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
 
-    // Check admin role
+    // Check admin role - profiles.id references auth.users(id)
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (profile?.role !== 'admin') {

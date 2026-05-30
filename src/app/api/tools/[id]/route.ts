@@ -1,101 +1,214 @@
 // =============================================
 // API - Single Tool Endpoint
+// Connected to Supabase
 // =============================================
 
-import { NextResponse } from 'next/server';
-
-// Import shared store (in real app, this would be Supabase)
-const mockTools = [
-  { id: '1', name: 'ChatGPT', slug: 'chatgpt', description: 'نموذج لغوي متقدم للكتابة والتحليل', logo_url: null, website_url: 'https://chat.openai.com', documentation_url: null, pricing_model: 'freemium', monthly_price: 20, category_id: '1', tags: ['writing', 'chat'], features: null, alternatives: null, stats: { uses: 1500000, rating: 4.8, reviews: 25000 }, is_featured: true, is_verified: true, created_at: '2026-01-15', updated_at: '2026-05-20' },
-  { id: '2', name: 'Midjourney', slug: 'midjourney', description: 'توليد صور فنية مذهلة', logo_url: null, website_url: 'https://midjourney.com', documentation_url: null, pricing_model: 'paid', monthly_price: 30, category_id: '2', tags: ['image', 'design'], features: null, alternatives: null, stats: { uses: 890000, rating: 4.7, reviews: 15000 }, is_featured: true, is_verified: true, created_at: '2026-02-10', updated_at: '2026-05-18' },
-  { id: '3', name: 'Claude', slug: 'claude', description: 'مساعد ذكي للتحليل والكتابة', logo_url: null, website_url: 'https://claude.ai', documentation_url: null, pricing_model: 'freemium', monthly_price: null, category_id: '1', tags: ['writing', 'analysis'], features: null, alternatives: null, stats: { uses: 750000, rating: 4.9, reviews: 12000 }, is_featured: true, is_verified: true, created_at: '2026-03-05', updated_at: '2026-05-22' },
-  { id: '4', name: 'GitHub Copilot', slug: 'github-copilot', description: 'مساعد برمجة بالذكاء الاصطناعي', logo_url: null, website_url: 'https://github.com/features/copilot', documentation_url: null, pricing_model: 'paid', monthly_price: 10, category_id: '3', tags: ['coding', 'development'], features: null, alternatives: null, stats: { uses: 500000, rating: 4.6, reviews: 8000 }, is_featured: false, is_verified: true, created_at: '2026-01-20', updated_at: '2026-05-15' },
-  { id: '5', name: 'DALL-E 3', slug: 'dall-e-3', description: 'توليد صور واقعية من النصوص', logo_url: null, website_url: 'https://openai.com/dall-e-3', documentation_url: null, pricing_model: 'paid', monthly_price: 15, category_id: '2', tags: ['image', 'design'], features: null, alternatives: null, stats: { uses: 620000, rating: 4.7, reviews: 11000 }, is_featured: true, is_verified: true, created_at: '2026-02-28', updated_at: '2026-05-19' },
-  { id: '6', name: 'ElevenLabs', slug: 'elevenlabs', description: 'أصوات AI واقعية للنصوص والكلام', logo_url: null, website_url: 'https://elevenlabs.io', documentation_url: null, pricing_model: 'freemium', monthly_price: null, category_id: '9', tags: ['audio', 'voice'], features: null, alternatives: null, stats: { uses: 420000, rating: 4.8, reviews: 9000 }, is_featured: false, is_verified: true, created_at: '2026-03-15', updated_at: '2026-05-21' },
-  { id: '7', name: 'Notion AI', slug: 'notion-ai', description: 'مساعد ذكي للعملاء وكتابة النصوص', logo_url: null, website_url: 'https://notion.so', documentation_url: null, pricing_model: 'paid', monthly_price: 10, category_id: '1', tags: ['writing', 'productivity'], features: null, alternatives: null, stats: { uses: 380000, rating: 4.5, reviews: 7000 }, is_featured: false, is_verified: true, created_at: '2026-01-25', updated_at: '2026-05-14' },
-  { id: '8', name: 'Canva AI', slug: 'canva-ai', description: 'تصميم جرافيك بالذكاء الاصطناعي', logo_url: null, website_url: 'https://canva.com', documentation_url: null, pricing_model: 'freemium', monthly_price: 13, category_id: '2', tags: ['design', 'graphics'], features: null, alternatives: null, stats: { uses: 520000, rating: 4.4, reviews: 11000 }, is_featured: false, is_verified: true, created_at: '2026-02-05', updated_at: '2026-05-16' },
-  { id: '9', name: 'Jasper', slug: 'jasper', description: 'كتابة محتوى تسويقي بالذكاء الاصطناعي', logo_url: null, website_url: 'https://jasper.ai', documentation_url: null, pricing_model: 'paid', monthly_price: 49, category_id: '5', tags: ['marketing', 'writing'], features: null, alternatives: null, stats: { uses: 290000, rating: 4.3, reviews: 5000 }, is_featured: false, is_verified: false, created_at: '2026-03-10', updated_at: '2026-05-12' },
-  { id: '10', name: 'Runway', slug: 'runway', description: 'توليد وتحرير فيديوهات بالذكاء الاصطناعي', logo_url: null, website_url: 'https://runwayml.com', documentation_url: null, pricing_model: 'paid', monthly_price: 35, category_id: '6', tags: ['video', 'editing'], features: null, alternatives: null, stats: { uses: 310000, rating: 4.6, reviews: 6000 }, is_featured: false, is_verified: true, created_at: '2026-01-30', updated_at: '2026-05-17' },
-];
-
-let toolsStore = [...mockTools];
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { successResponse, errorResponse } from '@/lib/api/response';
+import { z } from 'zod';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const tool = toolsStore.find(t => t.id === id || t.slug === id);
-  
-  if (!tool) {
-    return NextResponse.json({
-      success: false,
-      error: 'Tool not found',
-    }, { status: 404 });
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Try to find by ID or slug
+    const { data: tool, error } = await supabase
+      .from('tools')
+      .select(`
+        *,
+        category:categories(id, name, slug, color, icon)
+      `)
+      .or(`id.eq.${id},slug.eq.${id}`)
+      .eq('status', 'published')
+      .single();
+
+    if (error || !tool) {
+      return NextResponse.json(errorResponse('الأداة غير موجودة'), { status: 404 });
+    }
+
+    // Get recent reviews
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select(`
+        id,
+        rating,
+        title,
+        content,
+        pros,
+        cons,
+        created_at,
+        author:profiles(id, display_name, avatar_url)
+      `)
+      .eq('tool_id', tool.id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Get similar tools (same category)
+    const { data: similarTools } = await supabase
+      .from('tools')
+      .select(`
+        id,
+        name,
+        slug,
+        tagline,
+        logo_url,
+        pricing_type,
+        rating_avg
+      `)
+      .eq('category_id', tool.category_id)
+      .eq('status', 'published')
+      .neq('id', tool.id)
+      .order('rating_avg', { ascending: false })
+      .limit(4);
+
+    // Get rating breakdown
+    const { data: ratingStats } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('tool_id', tool.id)
+      .eq('status', 'approved');
+
+    const ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number>;
+    ratingStats?.forEach(r => {
+      if (r.rating >= 1 && r.rating <= 5) {
+        ratingBreakdown[r.rating]++;
+      }
+    });
+
+    return NextResponse.json(successResponse({
+      data: {
+        ...tool,
+        recent_reviews: reviews || [],
+        alternatives: similarTools || [],
+        stats: {
+          rating_avg: tool.rating_avg,
+          rating_count: tool.rating_count,
+          rating_breakdown: ratingBreakdown,
+        },
+      },
+    }));
+  } catch (error) {
+    console.error('Tool detail error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
-  
-  return NextResponse.json({
-    success: true,
-    data: tool,
-  });
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const index = toolsStore.findIndex(t => t.id === id);
-  
-  if (index === -1) {
-    return NextResponse.json({
-      success: false,
-      error: 'Tool not found',
-    }, { status: 404 });
-  }
-  
   try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Check auth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      return NextResponse.json(errorResponse('يرجى تسجيل الدخول أولاً'), { status: 401 });
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('غير مصرح'), { status: 403 });
+    }
+
     const body = await request.json();
-    
-    const updatedTool = {
-      ...toolsStore[index],
-      ...body,
-      updated_at: new Date().toISOString(),
-    };
-    
-    toolsStore[index] = updatedTool;
-    
-    return NextResponse.json({
-      success: true,
-      data: updatedTool,
+
+    // Validation (all fields optional)
+    const updateSchema = z.object({
+      name: z.string().min(2).max(100).optional(),
+      slug: z.string().min(2).max(200).regex(/^[a-z0-9-]+$/).optional(),
+      tagline: z.string().max(150).optional().nullable(),
+      description: z.string().min(50).optional().nullable(),
+      website_url: z.string().url().optional(),
+      logo_url: z.string().url().optional().nullable(),
+      category_id: z.string().uuid().optional().nullable(),
+      pricing_type: z.enum(['free', 'freemium', 'paid', 'enterprise', 'contact']).optional(),
+      starting_price: z.number().min(0).optional().nullable(),
+      tags: z.array(z.string()).max(10).optional(),
+      features: z.array(z.object({ title: z.string(), desc: z.string() })).optional(),
+      is_featured: z.boolean().optional(),
+      status: z.enum(['pending', 'published', 'rejected', 'archived']).optional(),
     });
+
+    const validated = updateSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(errorResponse(validated.error.issues[0].message), { status: 400 });
+    }
+
+    // Update tool
+    const { data: tool, error } = await supabase
+      .from('tools')
+      .update({
+        ...validated.data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating tool:', error);
+      return NextResponse.json(errorResponse(error.message), { status: 500 });
+    }
+
+    return NextResponse.json(successResponse({ data: tool }));
   } catch (error) {
-    console.error('Error updating tool:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update tool',
-    }, { status: 500 });
+    console.error('Update tool error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const index = toolsStore.findIndex(t => t.id === id);
-  
-  if (index === -1) {
-    return NextResponse.json({
-      success: false,
-      error: 'Tool not found',
-    }, { status: 404 });
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Check auth
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      return NextResponse.json(errorResponse('يرجى تسجيل الدخول أولاً'), { status: 401 });
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('غير مصرح'), { status: 403 });
+    }
+
+    const { error } = await supabase
+      .from('tools')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting tool:', error);
+      return NextResponse.json(errorResponse(error.message), { status: 500 });
+    }
+
+    return NextResponse.json(successResponse({ message: 'تم حذف الأداة بنجاح' }));
+  } catch (error) {
+    console.error('Delete tool error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
-  
-  toolsStore.splice(index, 1);
-  
-  return NextResponse.json({
-    success: true,
-    message: 'Tool deleted successfully',
-  });
 }

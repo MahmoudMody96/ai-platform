@@ -1,0 +1,16 @@
+﻿version: 1
+plan:
+  name: Fix Next.js ambiguous routes
+  max_concurrency: 2
+tasks:
+  - id: investigate
+    title: Investigate all dynamic routes
+    prompt: Find ALL folders with [ brackets ] in src/app and .worktrees. List them all. Report conflicts in tools/ directory.
+    assigned_to: coder
+    timeout_ms: 180000
+
+  - id: verify
+    title: Verify git state
+    prompt: Run git ls-tree -r master and show all tools/ files. Check if [id] exists on GitHub. Report git state.
+    assigned_to: verifier
+    timeout_ms: 180000

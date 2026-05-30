@@ -1,0 +1,448 @@
+version: 1
+plan:
+  name: 'AI Platform Full Build - README Implementation'
+  description: 'Implement all README.md requirements: Database, API, UI, SEO, Admin Dashboard'
+  max_concurrency: 4
+  max_consecutive_failures: 2
+  max_cycles: 20
+  verifier_config:
+    default_verifiers: [verifier]
+    audit_sample_rate: 0.0
+
+tasks:
+  # ============================================================
+  # Phase 1: Database & Setup
+  # ============================================================
+  - id: db-schema-check
+    title: 'Check and update DB Schema'
+    prompt: |
+      Review current Supabase schema vs README.md requirements:
+      1. Check current tables: tools, categories, profiles, reviews, articles, favorites, newsletter_subscribers
+      2. Verify RLS policies are correct
+      3. Check if functions/triggers exist (update_category_tools_count, update_tool_rating)
+      4. Document any missing columns or tables
+      5. Create migration file for any missing items
+
+      Supabase Project: orwdvpfyusyrzxnvuimb.supabase.co
+
+      Output: migration file path + summary of current state
+    assigned_to: devops
+    verified_by: verifier
+    verify_prompt: |
+      Verify the DB schema matches README requirements:
+      - All tables exist with correct columns
+      - RLS policies allow public read of published tools
+      - Triggers update counts automatically
+      - Use Supabase dashboard or psql to verify
+
+  # ============================================================
+  # Phase 2: API Routes
+  # ============================================================
+  - id: api-tools-routes
+    title: 'Create and update Tools API Routes'
+    prompt: |
+      Develop Tools API Routes per README.md:
+      1. GET /api/tools - list with filtering, sorting, pagination, search
+      2. GET /api/tools/[id] - tool details
+      3. POST /api/tools - create tool (Admin)
+      4. PUT /api/tools/[id] - update tool (Admin)
+      5. DELETE /api/tools/[id] - delete tool (Admin)
+
+      Requirements:
+      - Pagination (page, limit)
+      - Filtering (category, pricing, sort)
+      - Full-text search (Arabic)
+      - Zod validation
+      - Rate limiting
+      - Connect to Supabase (NOT mock data)
+
+      Check existing routes first: src/app/api/tools/
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test the API routes:
+      - GET /api/tools returns published tools only
+      - Filtering works (category, pricing)
+      - Pagination works
+      - Authentication required for POST/PUT/DELETE
+      - Zod validation rejects invalid data
+      Use curl or fetch to test endpoints
+
+  - id: api-reviews-routes
+    title: 'Create and update Reviews API Routes'
+    prompt: |
+      Develop Reviews API Routes per README.md:
+      1. GET /api/reviews?tool_id=X - list reviews
+      2. POST /api/reviews - create review (Auth)
+      3. PUT /api/reviews/[id] - update review
+      4. DELETE /api/reviews/[id] - delete review
+
+      Requirements:
+      - One review per user per tool
+      - Rating 1-5 validation
+      - Content min 50 chars
+      - Optimistic updates
+      - Connect to Supabase
+
+      Check existing routes first: src/app/api/reviews/
+    assigned_to: coder
+    depends_on: [db-schema-check]
+    verified_by: verifier
+    verify_prompt: |
+      Test the reviews API:
+      - Can fetch reviews by tool_id
+      - Auth required for POST
+      - Duplicate review rejected
+      - Rating validation (1-5 only)
+      - Content length validation
+
+  - id: api-newsletter-routes
+    title: 'Create and update Newsletter API Routes'
+    prompt: |
+      Develop Newsletter API Routes:
+      1. POST /api/newsletter/subscribe - subscribe
+      2. DELETE /api/newsletter/subscribe - unsubscribe
+      3. POST /api/newsletter/send - send newsletter (Admin)
+
+      Requirements:
+      - Email validation
+      - Duplicate email handling
+      - Source tracking
+      - Resend integration (optional)
+
+      Already exists: src/app/api/newsletter/subscribe/route.ts - review and update
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test newsletter API:
+      - POST with valid email succeeds
+      - POST with duplicate email handled
+      - Invalid email rejected
+
+  - id: api-search-routes
+    title: 'Improve Search API'
+    prompt: |
+      Develop Search API per README.md:
+      - Full-text search on tools and articles
+      - Arabic language support
+      - Relevance scoring
+      - Category filtering
+      - Limit results
+
+      Check: src/app/api/search/route.ts - update if needed
+    assigned_to: coder
+    depends_on: [db-schema-check]
+    verified_by: verifier
+    verify_prompt: |
+      Test search:
+      - Search returns tools and articles
+      - Arabic search works
+      - Results ordered by relevance
+
+  - id: api-admin-routes
+    title: 'Create and update Admin API Routes'
+    prompt: |
+      Develop Admin API Routes:
+      1. GET /api/admin/stats - statistics
+      2. GET /api/admin/users - user list
+      3. PUT /api/admin/users/[id] - update user
+
+      Requirements:
+      - Admin only access
+      - Stats: total tools, articles, users, reviews
+      - Charts data for dashboard
+
+      Check: src/app/api/admin/
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test admin API:
+      - Non-admin gets 401/403
+      - Admin can fetch stats
+      - Stats include all counts
+
+  # ============================================================
+  # Phase 3: UI Components
+  # ============================================================
+  - id: ui-tools-page
+    title: 'Update Tools page'
+    prompt: |
+      Update tools page: src/app/tools/page.tsx
+
+      Requirements:
+      1. Connect to /api/tools (NOT mock data)
+      2. TanStack Query for data fetching
+      3. Filtering: category, pricing, sort
+      4. Search with debounce
+      5. Pagination (infinite scroll optional)
+      6. Grid/List view toggle
+      7. Loading skeletons
+      8. Empty state
+
+      Keep existing design, update data fetching only.
+    assigned_to: coder
+    depends_on: [api-tools-routes]
+    verified_by: verifier
+    verify_prompt: |
+      Test tools page:
+      - Fetches from API (check Network tab)
+      - Filters work
+      - Search works
+      - Pagination works
+      - No mock data displayed
+
+  - id: ui-tool-detail
+    title: 'Update Tool detail page'
+    prompt: |
+      Update tool detail page: src/app/tools/[slug]/page.tsx
+
+      Requirements:
+      1. Connect to /api/tools/[slug] (NOT mock data)
+      2. Show tool info, features, pricing
+      3. Show reviews from API
+      4. Add to favorites functionality
+      5. Compare button
+      6. Alternative tools section
+      7. SEO metadata
+
+      Keep existing design, update data fetching.
+    assigned_to: coder
+    depends_on: [api-tools-routes]
+    verified_by: verifier
+    verify_prompt: |
+      Test tool detail page:
+      - Fetches from API
+      - Shows correct tool data
+      - Reviews section works
+      - Alternative tools shown
+
+  - id: ui-landing-page
+    title: 'Improve Landing page'
+    prompt: |
+      Update landing page: src/app/page.tsx
+
+      Requirements:
+      1. Connect featured tools to API
+      2. Connect latest articles to API
+      3. Connect stats to API
+      4. Newsletter signup to API
+      5. Add SEO metadata
+
+      Add TanStack Query for data fetching.
+      Keep existing beautiful design.
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test landing page:
+      - Data fetched from API
+      - No hardcoded mock data in production
+      - SEO metadata present
+
+  # ============================================================
+  # Phase 4: SEO & Performance
+  # ============================================================
+  - id: seo-metadata
+    title: 'Add SEO Metadata to pages'
+    prompt: |
+      Add SEO metadata per README.md:
+
+      For each tool page:
+      - title: "ToolName - Review and Rating | AI Platform"
+      - description from meta_description or tagline
+      - openGraph images
+      - canonical URLs
+      - JSON-LD structured data (SoftwareApplication)
+
+      Pages to update:
+      - src/app/tools/[slug]/page.tsx
+      - src/app/blog/[slug]/page.tsx
+      - src/app/page.tsx
+
+      Use: src/lib/seo/index.ts functions
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Verify SEO:
+      - Check page source for meta tags
+      - Validate JSON-LD in Google Rich Results
+      - Check canonical URLs
+      - Verify og:image tags
+
+  - id: seo-sitemap
+    title: 'Create dynamic Sitemap'
+    prompt: |
+      Create dynamic sitemap.xml:
+
+      Requirements:
+      - Static pages: /, /tools, /blog, /categories, /about
+      - Dynamic pages: tools, articles, categories from DB
+      - lastmod, changefreq, priority
+      - Submit to Google Search Console
+
+      Check: src/app/sitemap.ts or src/app/api/sitemap/route.ts
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Verify sitemap:
+      - /sitemap.xml returns valid XML
+      - Includes tools, articles, categories
+      - Valid XML format
+
+  - id: performance-optimization
+    title: 'Performance optimization'
+    prompt: |
+      Apply performance optimizations per README.md:
+
+      1. Server Components where possible
+      2. Streaming for tools
+      3. Caching strategy:
+         - Landing: SSG (ISR 24hr)
+         - Tools List: SSR (cache 5 min)
+         - Tool Detail: ISR (1hr)
+         - Search: SSR (no cache)
+
+      4. Bundle size optimization:
+         - First Load JS < 150KB
+         - Per-page chunk < 50KB
+
+      5. Core Web Vitals targets:
+         - LCP < 2.5s
+         - FID < 100ms
+         - CLS < 0.1
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Verify performance:
+      - Run Lighthouse audit
+      - Check bundle size
+      - Verify caching headers
+
+  # ============================================================
+  # Phase 5: Admin Dashboard
+  # ============================================================
+  - id: admin-dashboard
+    title: 'Develop Admin Dashboard'
+    prompt: |
+      Update admin dashboard: src/app/admin/page.tsx
+
+      Requirements:
+      1. Connect to /api/admin/stats
+      2. Stats cards: tools, articles, users, reviews
+      3. Charts for weekly data
+      4. Recent activity section
+      5. Quick actions
+
+      Check existing: src/app/admin/
+    assigned_to: coder
+    depends_on: [api-admin-routes]
+    verified_by: verifier
+    verify_prompt: |
+      Test admin dashboard:
+      - Stats loaded from API
+      - Charts display correctly
+      - Admin-only access working
+
+  - id: admin-tools-management
+    title: 'Develop Admin Tools Management'
+    prompt: |
+      Update admin tools page: src/app/admin/tools/
+
+      Requirements:
+      1. DataTable with sorting and filtering
+      2. Add/Edit/Delete tools
+      3. Bulk actions
+      4. Status change (pending to published)
+      5. Featured toggle
+      6. Search functionality
+
+      Use existing UI components from src/components/admin/
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test admin tools:
+      - CRUD operations work
+      - Pagination works
+      - Status changes reflect in DB
+
+  - id: admin-articles-management
+    title: 'Develop Admin Articles Management'
+    prompt: |
+      Update admin articles page: src/app/admin/articles/
+
+      Requirements:
+      1. List articles with filtering
+      2. Create/Edit article
+      3. Markdown/MDX editor
+      4. Status: draft to published to archived
+      5. Author selection
+      6. Category assignment
+
+      Use existing components.
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test admin articles:
+      - CRUD operations work
+      - Editor functions properly
+      - Status changes work
+
+  # ============================================================
+  # Phase 6: Middleware & Security
+  # ============================================================
+  - id: middleware-auth
+    title: 'Update Middleware for Auth'
+    prompt: |
+      Update middleware: src/proxy.ts
+
+      Requirements:
+      1. Auth check for protected routes
+      2. Admin role check for /admin/*
+      3. Rate limiting
+      4. Security headers (X-Frame-Options, etc.)
+      5. CORS for API routes
+
+      Current: src/proxy.ts exists - update it
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: |
+      Test middleware:
+      - Non-auth users redirected to login
+      - Non-admin users blocked from /admin/*
+      - API routes have proper CORS
+      - Security headers present
+
+  # ============================================================
+  # Phase 7: Integration Testing
+  # ============================================================
+  - id: final-integration
+    title: 'Final Integration Testing'
+    prompt: |
+      Test the entire project:
+
+      1. Run npm run build - success
+      2. Run npm run type-check - no errors
+      3. Run npm run lint - no warnings
+
+      4. Test user flow:
+         - Browse tools -> View tool detail -> Add review
+         - Subscribe to newsletter
+         - Search for tools
+
+      5. Test admin flow:
+         - Login as admin
+         - Add new tool
+         - Edit tool
+         - View stats
+
+      6. Test SEO:
+         - Sitemap works
+         - Meta tags present
+         - JSON-LD valid
+
+      Report any issues found.
+    assigned_to: verifier
+    depends_on: [ui-tools-page, ui-tool-detail, ui-landing-page, admin-dashboard, admin-tools-management, seo-metadata, seo-sitemap, middleware-auth]
+    role: verify-as-task
+    verified_by: ~
+    verify_prompt: |
+      This is the integration test task itself - report results directly.

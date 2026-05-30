@@ -1,76 +1,127 @@
 // =============================================
-// API - Categories Endpoints
+// API - Categories Endpoints (Supabase)
 // =============================================
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { z } from 'zod';
 
-// Mock data
-const mockCategories = [
-  { id: '1', name: 'الكتابة', slug: 'writing', description: 'أدوات لكتابة المحتوى', icon: '✍️', color: '#6366F1', sort_order: 1, parent_id: null, created_at: '2026-01-01' },
-  { id: '2', name: 'التصميم', slug: 'design', description: 'أدوات التصميم الجرافيكي', icon: '🎨', color: '#EC4899', sort_order: 2, parent_id: null, created_at: '2026-01-01' },
-  { id: '3', name: 'التطوير', slug: 'development', description: 'أدوات البرمجة', icon: '💻', color: '#10B981', sort_order: 3, parent_id: null, created_at: '2026-01-01' },
-  { id: '4', name: 'الأتمتة', slug: 'automation', description: 'أدوات أتمتة المهام', icon: '⚡', color: '#F59E0B', sort_order: 4, parent_id: null, created_at: '2026-01-01' },
-  { id: '5', name: 'التسويق', slug: 'marketing', description: 'أدوات التسويق الرقمي', icon: '📊', color: '#3B82F6', sort_order: 5, parent_id: null, created_at: '2026-01-01' },
-  { id: '6', name: 'الفيديو', slug: 'video', description: 'أدوات إنتاج الفيديو', icon: '🎬', color: '#8B5CF6', sort_order: 6, parent_id: null, created_at: '2026-01-01' },
-  { id: '7', name: 'التعليم', slug: 'education', description: 'أدوات التعلم والتعليم', icon: '📚', color: '#14B8A6', sort_order: 7, parent_id: null, created_at: '2026-01-01' },
-  { id: '8', name: 'البحث', slug: 'research', description: 'محركات بحث ذكية', icon: '🔍', color: '#F97316', sort_order: 8, parent_id: null, created_at: '2026-01-01' },
-  { id: '9', name: 'الصوت', slug: 'audio', description: 'أدوات الصوت والكلام', icon: '🎙️', color: '#EF4444', sort_order: 9, parent_id: null, created_at: '2026-01-01' },
-  { id: '10', name: 'العروض', slug: 'presentations', description: 'أدوات العروض التقديمية', icon: '📽️', color: '#84CC16', sort_order: 10, parent_id: null, created_at: '2026-01-01' },
-];
+const errorResponse = (message: string) => ({ success: false, error: message });
 
-let categoriesStore = [...mockCategories];
-
-export async function GET(request: Request) {
+// GET /api/categories - List categories
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search');
-  
-  let filtered = [...categoriesStore];
-  
-  // Apply search filter
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(c => 
-      c.name.toLowerCase().includes(searchLower) || 
-      c.description?.toLowerCase().includes(searchLower)
-    );
-  }
-  
-  // Sort by sort_order
-  filtered.sort((a, b) => a.sort_order - b.sort_order);
-  
-  return NextResponse.json({
-    success: true,
-    data: filtered,
-  });
-}
+  const featured = searchParams.get('featured');
 
-export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    
-    const newCategory = {
-      id: String(Date.now()),
-      name: body.name || 'Untitled Category',
-      slug: body.slug || body.name?.toLowerCase().replace(/\s+/g, '-') || `category-${Date.now()}`,
-      description: body.description || null,
-      icon: body.icon || null,
-      color: body.color || '#6366f1',
-      sort_order: body.sort_order ?? categoriesStore.length,
-      parent_id: body.parent_id || null,
-      created_at: new Date().toISOString(),
-    };
-    
-    categoriesStore.push(newCategory);
-    
+    const supabase = await createClient();
+
+    let query = supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (featured === 'true') {
+      query = query.eq('is_featured', true);
+    }
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,name_en.ilike.%${search}%`);
+    }
+
+    const { data: categories, error } = await query;
+
+    if (error) {
+      console.error('Categories fetch error:', error);
+      return NextResponse.json(errorResponse('Failed to fetch categories'), { status: 500 });
+    }
+
     return NextResponse.json({
       success: true,
-      data: newCategory,
-    }, { status: 201 });
+      data: categories || [],
+    });
   } catch (error) {
-    console.error('Error creating category:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create category',
-    }, { status: 500 });
+    console.error('Categories API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
+    }
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+  }
+}
+
+// POST /api/categories - Create category (Admin)
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check admin role
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
+    }
+
+    const body = await request.json();
+
+    const createSchema = z.object({
+      name: z.string().min(1).max(100),
+      name_en: z.string().max(100).optional(),
+      slug: z.string().min(1).max(100).optional(),
+      description: z.string().max(500).optional(),
+      icon: z.string().max(50).optional(),
+      color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      sort_order: z.number().int().optional(),
+      is_featured: z.boolean().optional(),
+    });
+
+    const validated = createSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(errorResponse(validated.error.issues[0].message), { status: 400 });
+    }
+
+    const slug = validated.data.slug || validated.data.name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+
+    const { data: category, error } = await supabase
+      .from('categories')
+      .insert({
+        name: validated.data.name,
+        name_en: validated.data.name_en,
+        slug,
+        description: validated.data.description,
+        icon: validated.data.icon,
+        color: validated.data.color || '#6366f1',
+        sort_order: validated.data.sort_order ?? 0,
+        is_featured: validated.data.is_featured ?? false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Category create error:', error);
+      return NextResponse.json(errorResponse('Failed to create category'), { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: category }, { status: 201 });
+  } catch (error) {
+    console.error('Categories API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
+    }
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
 }

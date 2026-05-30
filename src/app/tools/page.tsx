@@ -12,36 +12,47 @@ import { SearchBar } from '@/components/search/SearchBar';
 import { SearchFilters, SortOption } from '@/components/search/SearchFilters';
 import { StarRating } from '@/components/reviews/StarRating';
 import { SaveButton } from '@/components/favorites/SaveButton';
+import { useQuery } from '@tanstack/react-query';
 
-const allTools = [
-  { id: '1', name: 'ChatGPT', description: 'نموذج لغوي متقدم للكتابة والتحليل', pricing: 'freemium', rating: 4.8, category: 'الكتابة', url: 'https://chat.openai.com', featured: true },
-  { id: '2', name: 'Midjourney', description: 'توليد صور فنية مذهلة بالذكاء الاصطناعي', pricing: 'paid', rating: 4.7, category: 'التصميم', url: 'https://midjourney.com', featured: true },
-  { id: '3', name: 'Claude', description: 'مساعد ذكي للتحليل والكتابة والإبداع', pricing: 'freemium', rating: 4.9, category: 'الكتابة', url: 'https://claude.ai', featured: true },
-  { id: '4', name: 'GitHub Copilot', description: 'مساعد برمجة بالذكاء الاصطناعي', pricing: 'paid', rating: 4.6, category: 'التطوير', url: 'https://github.com/features/copilot', featured: false },
-  { id: '5', name: 'DALL-E 3', description: 'توليد صور واقعية من النصوص', pricing: 'paid', rating: 4.7, category: 'التصميم', url: 'https://openai.com/dall-e-3', featured: true },
-  { id: '6', name: 'ElevenLabs', description: 'أصوات AI واقعية للنصوص والكلام', pricing: 'freemium', rating: 4.8, category: 'الصوت', url: 'https://elevenlabs.io', featured: false },
-  { id: '7', name: 'Notion AI', description: 'مساعد ذكي للعملاء وكتابة النصوص', pricing: 'paid', rating: 4.5, category: 'الكتابة', url: 'https://notion.so', featured: false },
-  { id: '8', name: 'Canva AI', description: 'تصميم جرافيك بالذكاء الاصطناعي', pricing: 'freemium', rating: 4.4, category: 'التصميم', url: 'https://canva.com', featured: false },
-  { id: '9', name: 'Jasper', description: 'كتابة محتوى تسويقي بالذكاء الاصطناعي', pricing: 'paid', rating: 4.3, category: 'التسويق', url: 'https://jasper.ai', featured: false },
-  { id: '10', name: 'Runway', description: 'توليد وتحرير فيديوهات بالذكاء الاصطناعي', pricing: 'paid', rating: 4.6, category: 'الفيديو', url: 'https://runwayml.com', featured: false },
-  { id: '11', name: 'Perplexity', description: 'محرك بحث ذكي بالإجابات المباشرة', pricing: 'freemium', rating: 4.7, category: 'البحث', url: 'https://perplexity.ai', featured: false },
-  { id: '12', name: 'Gamma', description: 'عروض تقديمية احترافية بالذكاء الاصطناعي', pricing: 'freemium', rating: 4.5, category: 'العروض', url: 'https://gamma.app', featured: false },
-];
+interface Tool {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  tagline: string | null;
+  website_url: string;
+  logo_url: string | null;
+  pricing_type: 'free' | 'freemium' | 'paid' | 'enterprise' | 'contact';
+  starting_price: number | null;
+  rating_avg: number;
+  rating_count: number;
+  is_featured: boolean;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+  } | null;
+}
 
-const categories = ['الكل', 'الكتابة', 'التصميم', 'التطوير', 'التسويق', 'الفيديو', 'الصوت', 'البحث', 'العروض'];
+interface ToolsResponse {
+  success: boolean;
+  data: Tool[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
+}
+
+const categories = ['الكل', 'كتابة', 'تصميم', 'برمجة', 'صوت', 'فيديو', 'بحث'];
 const pricingOptions = [
   { value: 'all', label: 'كل الأسعار' },
   { value: 'free', label: 'مجاني' },
   { value: 'freemium', label: 'مجاني + مدفوع' },
   { value: 'paid', label: 'مدفوع' },
 ];
-
-const sortFunctions: Record<SortOption, (a: typeof allTools[0], b: typeof allTools[0]) => number> = {
-  popular: (a, b) => b.rating - a.rating,
-  newest: () => 0,
-  rating: (a, b) => b.rating - a.rating,
-  alphabetical: (a, b) => a.name.localeCompare(b.name),
-};
 
 function ToolsLoading() {
   return (
@@ -57,31 +68,60 @@ function ToolsContent() {
   const router = useRouter();
   const initialCategory = searchParams.get('category') || 'الكل';
   const initialSearch = searchParams.get('search') || '';
+  const initialPage = parseInt(searchParams.get('page') || '1');
 
   const [searchQuery, setSearchQuery] = React.useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = React.useState(initialCategory);
   const [selectedPricing, setSelectedPricing] = React.useState('all');
   const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = React.useState(initialPage);
+
+  // Fetch tools from API
+  const { data: toolsData, isLoading, error } = useQuery<ToolsResponse>({
+    queryKey: ['tools', selectedCategory, selectedPricing, searchQuery, currentPage],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('pageSize', '20');
+      if (selectedCategory !== 'الكل') params.set('category', selectedCategory);
+      if (selectedPricing !== 'all') params.set('pricing', selectedPricing);
+      if (searchQuery) params.set('q', searchQuery);
+      params.set('sort', 'rating');
+
+      const res = await fetch(`/api/tools?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const getPricingBadge = (pricing: string) => {
     switch (pricing) {
       case 'free': return <Badge variant="success">مجاني</Badge>;
       case 'freemium': return <Badge variant="info">مجاني + مدفوع</Badge>;
       case 'paid': return <Badge variant="secondary">مدفوع</Badge>;
+      case 'enterprise': return <Badge variant="outline">للشركات</Badge>;
       default: return null;
     }
   };
 
-  const filteredTools = allTools
-    .filter(tool => {
-      const matchesSearch = !searchQuery ||
-        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'الكل' || tool.category === selectedCategory;
-      const matchesPricing = selectedPricing === 'all' || tool.pricing === selectedPricing;
-      return matchesSearch && matchesCategory && matchesPricing;
-    })
-    .sort(sortFunctions.popular);
+  const tools = toolsData?.data || [];
+  const totalPages = toolsData?.meta?.total_pages || 1;
+
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+    if (cat !== 'الكل') {
+      router.push(`/tools?category=${encodeURIComponent(cat)}`, { scroll: false });
+    } else {
+      router.push('/tools', { scroll: false });
+    }
+  };
+
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen">
@@ -98,7 +138,7 @@ function ToolsContent() {
             <nav className="flex items-center gap-6">
               <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">الرئيسية</Link>
               <Link href="/tools" className="text-sm font-medium text-primary">الأدوات</Link>
-              <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">لوحة التحكم</Link>
+              <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground">المدونة</Link>
             </nav>
             <div className="flex items-center gap-2">
               <Link href="/auth/login"><Button size="sm" variant="ghost">تسجيل الدخول</Button></Link>
@@ -119,7 +159,7 @@ function ToolsContent() {
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
-          onSubmit={(q) => setSearchQuery(q)}
+          onSubmit={handleSearch}
           placeholder="ابحث عن أي أداة... مثال: توليد صور، كتابة محتوى"
           className="mb-6"
         />
@@ -127,119 +167,189 @@ function ToolsContent() {
         {/* Filters */}
         <SearchFilters
           selectedCategory={selectedCategory}
-          onCategoryChange={(cat) => {
-            setSelectedCategory(cat);
-            if (cat !== 'الكل') {
-              router.push(`/tools?category=${encodeURIComponent(cat)}`, { scroll: false });
-            } else {
-              router.push('/tools', { scroll: false });
-            }
-          }}
+          onCategoryChange={handleCategoryChange}
           selectedPricing={selectedPricing}
-          onPricingChange={setSelectedPricing}
+          onPricingChange={(p) => { setSelectedPricing(p); setCurrentPage(1); }}
           categories={categories}
           pricingOptions={pricingOptions}
           className="mb-6"
         />
 
-        {/* Results bar */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted-foreground">
-            تم العثور على <span className="font-semibold text-foreground">{filteredTools.length}</span> أداة
-          </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setViewMode('grid')}
-              aria-label="عرض شبكي"
-              className="w-8 h-8"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setViewMode('list')}
-              aria-label="عرض قائمة"
-              className="w-8 h-8"
-            >
-              <List className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Tools Grid */}
-        {filteredTools.length > 0 ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-            {filteredTools.map((tool) => (
-              <Card key={tool.id} className="group hover:shadow-lg hover:-translate-y-1 transition-all relative">
-                <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-row items-center' : ''}`}>
-                  {viewMode === 'grid' ? (
-                    <>
-                      <div className="absolute top-4 left-4">
-                        <SaveButton toolId={tool.id} variant="ghost" size="icon" className="w-8 h-8 bg-background/80 backdrop-blur" />
-                      </div>
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0">
-                          {tool.name.charAt(0)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <h3 className="font-semibold text-lg group-hover:text-primary">{tool.name}</h3>
-                            {tool.featured && <Badge variant="default" className="text-xs">مميز</Badge>}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">{tool.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge variant="outline">{tool.category}</Badge>
-                        {getPricingBadge(tool.pricing)}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
-                        <StarRating rating={tool.rating} size="sm" />
-                        <a href={tool.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
-                          زيارة الموقع <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center text-xl font-bold text-primary flex-shrink-0">
-                        {tool.name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold group-hover:text-primary">{tool.name}</h3>
-                        <p className="text-sm text-muted-foreground">{tool.description}</p>
-                      </div>
-                      <div className="flex items-center gap-4 flex-shrink-0">
-                        <Badge variant="outline">{tool.category}</Badge>
-                        {getPricingBadge(tool.pricing)}
-                        <StarRating rating={tool.rating} size="sm" />
-                        <SaveButton toolId={tool.id} variant="ghost" size="icon" />
-                        <a href={tool.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
+        {/* Loading/Error States */}
+        {isLoading && <ToolsLoading />}
+        
+        {error && (
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-muted-foreground" />
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-destructive" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">لم يتم العثور على أدوات</h3>
-            <p className="text-muted-foreground mb-4">جرب البحث بكلمات مختلفة أو غير الفلاتر</p>
-            <Button onClick={() => { setSearchQuery(''); setSelectedCategory('الكل'); setSelectedPricing('all'); }}>
-              إعادة تعيين الفلاتر
-            </Button>
+            <h3 className="text-lg font-semibold mb-2">حدث خطأ</h3>
+            <p className="text-muted-foreground mb-4">تعذر تحميل الأدوات. حاول مرة أخرى.</p>
+            <Button onClick={() => window.location.reload()}>إعادة المحاولة</Button>
           </div>
+        )}
+
+        {/* Results bar */}
+        {!isLoading && !error && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-muted-foreground">
+                تم العثور على <span className="font-semibold text-foreground">{toolsData?.meta?.total || 0}</span> أداة
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setViewMode('grid')}
+                  aria-label="عرض شبكي"
+                  className="w-8 h-8"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setViewMode('list')}
+                  aria-label="عرض قائمة"
+                  className="w-8 h-8"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Tools Grid */}
+            {tools.length > 0 ? (
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+                {tools.map((tool) => (
+                  <Card key={tool.id} className="group hover:shadow-lg hover:-translate-y-1 transition-all relative">
+                    <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-row items-center' : ''}`}>
+                      {viewMode === 'grid' ? (
+                        <>
+                          <div className="absolute top-4 left-4">
+                            <SaveButton toolId={tool.id} variant="ghost" size="icon" className="w-8 h-8 bg-background/80 backdrop-blur" />
+                          </div>
+                          <div className="flex items-start gap-4 mb-4">
+                            <div 
+                              className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold text-primary flex-shrink-0"
+                              style={{ backgroundColor: (tool.category?.color || '#6366f1') + '20' }}
+                            >
+                              {tool.logo_url ? (
+                                <img src={tool.logo_url} alt={tool.name} className="w-8 h-8" />
+                              ) : (
+                                tool.name.charAt(0)
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <Link href={`/tools/${tool.slug}`} className="hover:text-primary">
+                                  <h3 className="font-semibold text-lg">{tool.name}</h3>
+                                </Link>
+                                {tool.is_featured && <Badge variant="default" className="text-xs">مميز</Badge>}
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {tool.tagline || tool.description?.slice(0, 100)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mb-4">
+                            {tool.category && (
+                              <Badge 
+                                variant="secondary"
+                                style={{ backgroundColor: tool.category.color + '15', color: tool.category.color }}
+                              >
+                                {tool.category.name}
+                              </Badge>
+                            )}
+                            {getPricingBadge(tool.pricing_type)}
+                          </div>
+
+                          <div className="flex items-center justify-between pt-4 border-t border-border">
+                            <div className="flex items-center gap-2">
+                              <StarRating rating={tool.rating_avg} size="sm" />
+                              <span className="text-xs text-muted-foreground">({tool.rating_count})</span>
+                            </div>
+                            <a href={tool.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                              زيارة الموقع <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div 
+                            className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-primary flex-shrink-0"
+                            style={{ backgroundColor: (tool.category?.color || '#6366f1') + '20' }}
+                          >
+                            {tool.logo_url ? (
+                              <img src={tool.logo_url} alt={tool.name} className="w-8 h-8" />
+                            ) : (
+                              tool.name.charAt(0)
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Link href={`/tools/${tool.slug}`}>
+                              <h3 className="font-semibold hover:text-primary">{tool.name}</h3>
+                            </Link>
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {tool.tagline || tool.description?.slice(0, 80)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4 flex-shrink-0">
+                            {tool.category && (
+                              <Badge variant="secondary">{tool.category.name}</Badge>
+                            )}
+                            {getPricingBadge(tool.pricing_type)}
+                            <StarRating rating={tool.rating_avg} size="sm" />
+                            <SaveButton toolId={tool.id} variant="ghost" size="icon" />
+                            <a href={tool.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">لم يتم العثور على أدوات</h3>
+                <p className="text-muted-foreground mb-4">جرب البحث بكلمات مختلفة أو غير الفلاتر</p>
+                <Button onClick={() => { setSearchQuery(''); setSelectedCategory('الكل'); setSelectedPricing('all'); }}>
+                  إعادة تعيين الفلاتر
+                </Button>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  السابق
+                </Button>
+                <span className="px-4 py-2 text-sm">
+                  صفحة {currentPage} من {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  التالي
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -1,96 +1,185 @@
 // =============================================
-// API - Articles Endpoints
+// API - Articles Endpoints (Supabase)
 // =============================================
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { z } from 'zod';
 
-// Mock data
-const mockArticles = [
-  { id: '1', title: 'مراجعة شاملة لـ ChatGPT', slug: 'review-chatgpt', excerpt: 'نظرة متعمقة على نموذج ChatGPT وقدراته', content: 'مقال مفصل عن ChatGPT...', cover_image_url: null, category_id: '1', tags: ['chatgpt', 'review'], status: 'published', featured: true, read_time: 8, author_id: '1', created_at: '2026-05-01', updated_at: '2026-05-20' },
-  { id: '2', title: 'أفضل أدوات توليد الصور بالذكاء الاصطناعي', slug: 'best-ai-image-generators', excerpt: 'قائمة بأفضل 10 أدوات لتوليد الصور', content: 'في هذا المقال نستعرض...', cover_image_url: null, category_id: '2', tags: ['images', 'ai'], status: 'published', featured: true, read_time: 12, author_id: '1', created_at: '2026-05-05', updated_at: '2026-05-18' },
-  { id: '3', title: 'كيف تستخدم Claude في العمل', slug: 'using-claude-at-work', excerpt: 'دليل عملي لاستخدام Claude في بيئة العمل', content: 'Claude من Anthropic...', cover_image_url: null, category_id: '1', tags: ['claude', 'guide'], status: 'draft', featured: false, read_time: 6, author_id: '1', created_at: '2026-05-10', updated_at: '2026-05-15' },
-];
+const errorResponse = (message: string) => ({ success: false, error: message });
 
-let articlesStore = [...mockArticles];
-
-export async function GET(request: Request) {
+// GET /api/articles - List articles
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search');
   const category = searchParams.get('category');
-  const status = searchParams.get('status');
+  const status = searchParams.get('status') || 'published';
+  const featured = searchParams.get('featured');
   const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
-  
-  let filtered = [...articlesStore];
-  
-  // Apply filters
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(a => 
-      a.title.toLowerCase().includes(searchLower) || 
-      a.excerpt?.toLowerCase().includes(searchLower)
-    );
-  }
-  
-  if (category) {
-    filtered = filtered.filter(a => a.category_id === category);
-  }
-  
-  if (status) {
-    filtered = filtered.filter(a => a.status === status);
-  }
-  
-  // Pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const paginatedArticles = filtered.slice(start, end);
-  
-  return NextResponse.json({
-    success: true,
-    data: paginatedArticles,
-    pagination: {
-      page,
-      pageSize,
-      totalCount: filtered.length,
-      totalPages: Math.ceil(filtered.length / pageSize),
-      hasNextPage: end < filtered.length,
-      hasPrevPage: page > 1,
-    },
-  });
-}
+  const pageSize = parseInt(searchParams.get('pageSize') || '12');
 
-export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    
-    const newArticle = {
-      id: String(Date.now()),
-      title: body.title || 'Untitled Article',
-      slug: body.slug || body.title?.toLowerCase().replace(/\s+/g, '-') || `article-${Date.now()}`,
-      excerpt: body.excerpt || null,
-      content: body.content || null,
-      cover_image_url: body.cover_image_url || null,
-      category_id: body.category_id || null,
-      tags: body.tags || [],
-      status: body.status || 'draft',
-      featured: body.featured || false,
-      read_time: body.read_time || 5,
-      author_id: body.author_id || '1',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    articlesStore.unshift(newArticle);
-    
+    const supabase = await createClient();
+
+    let query = supabase
+      .from('articles')
+      .select(`
+        id,
+        title,
+        slug,
+        excerpt,
+        cover_image_url,
+        tags,
+        views_count,
+        reading_time,
+        status,
+        published_at,
+        created_at,
+        category:categories(id, name, slug, color),
+        author:profiles(id, display_name, avatar_url)
+      `, { count: 'exact' })
+      .eq('status', status)
+      .order('published_at', { ascending: false });
+
+    // Apply filters
+    if (category) {
+      query = query.eq('category_id', category);
+    }
+
+    if (featured === 'true') {
+      query = query.eq('featured', true);
+    }
+
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
+    }
+
+    // Pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
+
+    const { data: articles, error, count } = await query;
+
+    if (error) {
+      console.error('Articles fetch error:', error);
+      return NextResponse.json(errorResponse('Failed to fetch articles'), { status: 500 });
+    }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / pageSize);
+
     return NextResponse.json({
       success: true,
-      data: newArticle,
-    }, { status: 201 });
+      data: articles || [],
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
-    console.error('Error creating article:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create article',
-    }, { status: 500 });
+    console.error('Articles API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
+    }
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+  }
+}
+
+// POST /api/articles - Create article (Admin)
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check admin role
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
+    }
+
+    const body = await request.json();
+
+    const createSchema = z.object({
+      title: z.string().min(1).max(200),
+      slug: z.string().min(1).max(200).optional(),
+      excerpt: z.string().max(500).optional(),
+      content: z.string().optional(),
+      cover_image_url: z.string().url().optional().nullable(),
+      category_id: z.string().uuid().optional().nullable(),
+      tags: z.array(z.string()).max(20).optional(),
+      status: z.enum(['draft', 'published', 'archived']).optional(),
+      reading_time: z.number().int().positive().optional(),
+    });
+
+    const validated = createSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(errorResponse(validated.error.issues[0].message), { status: 400 });
+    }
+
+    const slug = validated.data.slug || validated.data.title
+      .toLowerCase()
+      .replace(/[^\w\s\u0600-\u06FF-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+
+    const { data: article, error } = await supabase
+      .from('articles')
+      .insert({
+        title: validated.data.title,
+        slug,
+        excerpt: validated.data.excerpt,
+        content: validated.data.content,
+        cover_image_url: validated.data.cover_image_url,
+        category_id: validated.data.category_id,
+        tags: validated.data.tags || [],
+        status: validated.data.status || 'draft',
+        reading_time: validated.data.reading_time,
+        author_id: user.id,
+        published_at: validated.data.status === 'published' ? new Date().toISOString() : null,
+      })
+      .select(`
+        id,
+        title,
+        slug,
+        excerpt,
+        cover_image_url,
+        tags,
+        views_count,
+        reading_time,
+        status,
+        published_at,
+        created_at,
+        category:categories(id, name, slug, color),
+        author:profiles(id, display_name, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Article create error:', error);
+      return NextResponse.json(errorResponse('Failed to create article'), { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: article }, { status: 201 });
+  } catch (error) {
+    console.error('Articles API error:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
+    }
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
 }
