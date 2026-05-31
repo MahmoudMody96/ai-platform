@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
 
-  // Use middleware.ts only (not proxy.ts)
+  // Next.js 16 uses proxy.ts pattern
   serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
 
   // Redirect rules - disabled for preview URLs

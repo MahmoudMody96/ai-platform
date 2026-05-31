@@ -1,6 +1,6 @@
 // =============================================
-// Middleware - Auth Protection & Rate Limiting
-// AI Platform - 2026-05-30
+// Proxy - Auth Protection & Rate Limiting
+// AI Platform - Next.js 16 Pattern
 // =============================================
 
 import { NextResponse } from 'next/server';
@@ -60,7 +60,7 @@ function createSupabaseMiddlewareClient(request: NextRequest) {
 // Main Middleware Handler
 // ============================================================================
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for static files and API health checks
