@@ -25,9 +25,11 @@ export default function ProfilePage() {
   const [saveSuccess, setSaveSuccess] = React.useState(false);
   const [saveError, setSaveError] = React.useState('');
 
-  // Initialize form with user data
+  // Initialize form with user data (only when user first loads)
+  const initRef = React.useRef(false);
   React.useEffect(() => {
-    if (user) {
+    if (user && !initRef.current) {
+      initRef.current = true;
       setName(user.name);
       setUsername(user.username ?? '');
       setBio(user.bio ?? '');

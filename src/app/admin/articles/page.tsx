@@ -90,22 +90,22 @@ export default function AdminArticlesPage() {
     }
   }, [page, pageSize, searchQuery, statusFilter]);
 
-  // Fetch categories
-  const fetchCategories = React.useCallback(async () => {
-    try {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  }, []);
-
+  // Load initial data
   React.useEffect(() => {
-    fetchCategories();
-    fetchArticles();
+    const loadData = async () => {
+      try {
+        const [catsRes, artsRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/articles')
+        ]);
+        const [catsData, artsData] = await Promise.all([catsRes.json(), artsRes.json()]);
+        if (catsData.success) setCategories(catsData.data || []);
+        if (artsData.success) setArticles(artsData.data || []);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+    loadData();
   }, []);
 
   // Handlers

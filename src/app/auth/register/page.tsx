@@ -29,10 +29,11 @@ export default function RegisterPage() {
     }
   }, [user, authLoading, router]);
 
-  React.useEffect(() => {
-    if (error) clearError();
+  // Clear local errors when inputs change
+  const handleInputChange = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
     if (localError) setLocalError('');
-  }, [name, email, password, confirmPassword, error, clearError, localError]);
+  };
 
   if (authLoading || user) {
     return (
@@ -143,7 +144,7 @@ export default function RegisterPage() {
                 <label htmlFor="name" className="text-sm font-medium">الاسم</label>
                 <div className="relative">
                   <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="name" type="text" placeholder="اسمك الكامل" value={name} onChange={(e) => setName(e.target.value)} className="pe-3 ps-10 rtl:ps-3" required autoComplete="name" />
+                  <Input id="name" type="text" placeholder="اسمك الكامل" value={name} onChange={handleInputChange(setName)} className="pe-3 ps-10 rtl:ps-3" required autoComplete="name" />
                 </div>
               </div>
 
@@ -151,7 +152,7 @@ export default function RegisterPage() {
                 <label htmlFor="email" className="text-sm font-medium">البريد الإلكتروني</label>
                 <div className="relative">
                   <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="example@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pe-3 ps-10 rtl:ps-3" required autoComplete="email" dir="ltr" />
+                  <Input id="email" type="email" placeholder="example@email.com" value={email} onChange={handleInputChange(setEmail)} className="pe-3 ps-10 rtl:ps-3" required autoComplete="email" dir="ltr" />
                 </div>
               </div>
 

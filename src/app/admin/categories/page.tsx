@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/modal';
-import { Plus, Edit, Trash2, Loader2, X, Check, AlertTriangle, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Check, AlertTriangle, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import type { Category } from '@/types';
 
 interface CategoryFormData {
@@ -67,8 +67,23 @@ export default function AdminCategoriesPage() {
     }
   }, []);
 
+// Load initial data
   React.useEffect(() => {
-    fetchCategories();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        if (data.success) {
+          setCategories(data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   // Flatten categories for display

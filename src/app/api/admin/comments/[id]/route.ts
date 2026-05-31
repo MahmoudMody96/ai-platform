@@ -10,7 +10,7 @@ const mockComments = [
   { id: '3', content: 'أدوات رائعة! سأحاول استخدامها', article_id: '2', tool_id: null, parent_id: null, author_id: '4', is_approved: true, created_at: '2026-05-22T09:00:00Z', updated_at: '2026-05-22T09:00:00Z', author: { id: '4', display_name: 'خالد علي', email: 'khaled@example.com', avatar_url: null } },
 ];
 
-let commentsStore = [...mockComments];
+const commentsStore = [...mockComments];
 
 export async function DELETE(
   request: Request,

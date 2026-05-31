@@ -1,93 +1,232 @@
 // =============================================
 // API - Admin Users Endpoints
+// GET: List users with pagination
+// PUT: Update user (plan, role, display_name)
+// DELETE: Remove user
 // =============================================
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { successResponse, errorResponse } from '@/lib/api/response';
+import { z } from 'zod';
 
-// Mock data
-const mockUsers = [
-  { id: '1', email: 'admin@aiplatform.com', display_name: 'مدير النظام', username: 'admin', avatar_url: null, plan: 'pro', role: 'admin', created_at: '2026-01-01', updated_at: '2026-05-20' },
-  { id: '2', email: 'ahmed@example.com', display_name: 'أحمد محمد', username: 'ahmed_m', avatar_url: null, plan: 'free', role: 'user', created_at: '2026-02-15', updated_at: '2026-05-18' },
-  { id: '3', email: 'sara@example.com', display_name: 'سارة أحمد', username: 'sara_ah', avatar_url: null, plan: 'pro', role: 'editor', created_at: '2026-03-01', updated_at: '2026-05-15' },
-  { id: '4', email: 'khaled@example.com', display_name: 'خالد علي', username: 'khaled', avatar_url: null, plan: 'team', role: 'user', created_at: '2026-03-10', updated_at: '2026-05-12' },
-  { id: '5', email: 'fatma@example.com', display_name: 'فاطمة حسن', username: 'fatma_h', avatar_url: null, plan: 'free', role: 'user', created_at: '2026-04-05', updated_at: '2026-05-10' },
-];
+const updateUserSchema = z.object({
+  id: z.string().uuid(),
+  plan: z.enum(['free', 'pro', 'team']).optional(),
+  role: z.enum(['admin', 'editor', 'user']).optional(),
+  display_name: z.string().max(100).optional(),
+});
 
-let usersStore = [...mockUsers];
+// GET /api/admin/users - List all users
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const plan = searchParams.get('plan');
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
-  
-  let filtered = [...usersStore];
-  
-  // Apply filters
-  if (search) {
-    const searchLower = search.toLowerCase();
-    filtered = filtered.filter(u => 
-      u.email.toLowerCase().includes(searchLower) ||
-      u.display_name?.toLowerCase().includes(searchLower) ||
-      u.username?.toLowerCase().includes(searchLower)
-    );
+    // Check admin auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
+    }
+
+    // Verify admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
+    }
+
+    // Parse query params
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const plan = searchParams.get('plan') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get('pageSize') || '20')));
+
+    // Build query
+    let query = supabase
+      .from('profiles')
+      .select('id, email, display_name, username, avatar_url, plan, role, created_at, updated_at', { count: 'exact' });
+
+    // Apply filters
+    if (search) {
+      query = query.or(`email.ilike.%${search}%,display_name.ilike.%${search}%,username.ilike.%${search}%`);
+    }
+
+    if (plan) {
+      query = query.eq('plan', plan);
+    }
+
+    // Pagination
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize - 1;
+    query = query.range(start, end).order('created_at', { ascending: false });
+
+    const { data: users, error, count } = await query;
+
+    if (error) {
+      console.error('Admin users GET error:', error);
+      return NextResponse.json(errorResponse(error.message), { status: 500 });
+    }
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    return NextResponse.json(successResponse({
+      data: users || [],
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    }));
+  } catch (error) {
+    console.error('Admin users GET error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
-  
-  if (plan) {
-    filtered = filtered.filter(u => u.plan === plan);
-  }
-  
-  // Pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const paginatedUsers = filtered.slice(start, end);
-  
-  return NextResponse.json({
-    success: true,
-    data: paginatedUsers,
-    pagination: {
-      page,
-      pageSize,
-      totalCount: filtered.length,
-      totalPages: Math.ceil(filtered.length / pageSize),
-      hasNextPage: end < filtered.length,
-      hasPrevPage: page > 1,
-    },
-  });
 }
 
-export async function PUT(request: Request) {
+// PUT /api/admin/users - Update user
+export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, ...updates } = body;
-    
-    const index = usersStore.findIndex(u => u.id === id);
-    
-    if (index === -1) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not found',
-      }, { status: 404 });
+    const supabase = await createClient();
+
+    // Check admin auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
-    
-    const updatedUser = {
-      ...usersStore[index],
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-    
-    usersStore[index] = updatedUser;
-    
-    return NextResponse.json({
-      success: true,
-      data: updatedUser,
+
+    // Verify admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
+    }
+
+    // Parse and validate body
+    const body = await request.json();
+    const validated = updateUserSchema.safeParse(body);
+
+    if (!validated.success) {
+      return NextResponse.json(
+        errorResponse(validated.error.issues[0].message),
+        { status: 400 }
+      );
+    }
+
+    const { id, plan, role, display_name } = validated.data;
+
+    // Build update object
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (plan !== undefined) updates.plan = plan;
+    if (role !== undefined) updates.role = role;
+    if (display_name !== undefined) updates.display_name = display_name;
+
+    // Update profile
+    const { data: updated, error: updateError } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', id)
+      .select('id, email, display_name, username, avatar_url, plan, role, created_at, updated_at')
+      .single();
+
+    if (updateError) {
+      console.error('Admin users PUT error:', updateError);
+      return NextResponse.json(errorResponse(updateError.message), { status: 500 });
+    }
+
+    // Log activity
+    await supabase.from('activity_logs').insert({
+      action: 'user_updated',
+      entity_type: 'user',
+      entity_id: id,
+      user_id: user.id,
+      details: { plan, role, display_name },
     });
+
+    return NextResponse.json(successResponse({ data: updated }));
   } catch (error) {
-    console.error('Error updating user:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update user',
-    }, { status: 500 });
+    console.error('Admin users PUT error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+  }
+}
+
+// DELETE /api/admin/users - Delete user
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Check admin auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
+    }
+
+    // Verify admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.json(errorResponse('Admin access required'), { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(errorResponse('User ID is required'), { status: 400 });
+    }
+
+    // Prevent self-deletion
+    if (id === user.id) {
+      return NextResponse.json(errorResponse('Cannot delete your own account'), { status: 400 });
+    }
+
+    // Delete user profile (CASCADE should handle related data)
+    const { error: deleteError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Admin users DELETE error:', deleteError);
+      return NextResponse.json(errorResponse(deleteError.message), { status: 500 });
+    }
+
+    // Also delete auth user
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(id);
+
+    if (authDeleteError) {
+      console.error('Auth user delete error:', authDeleteError);
+      // Log but don't fail
+    }
+
+    // Log activity
+    await supabase.from('activity_logs').insert({
+      action: 'user_deleted',
+      entity_type: 'user',
+      entity_id: id,
+      user_id: user.id,
+      details: {},
+    });
+
+    return NextResponse.json(successResponse({ message: 'User deleted successfully' }));
+  } catch (error) {
+    console.error('Admin users DELETE error:', error);
+    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
   }
 }

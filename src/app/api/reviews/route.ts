@@ -129,11 +129,11 @@ export async function POST(request: NextRequest) {
     // Create review
     const { data, error } = await supabase.from('comments').insert({
       author_id: session.user.id,
-      tool_id: tool_id ?? null,
-      article_id: article_id ?? null,
+      tool_id: tool_id ?? undefined,
+      article_id: article_id ?? undefined,
       content: JSON.stringify({ rating, title, body: content }),
       is_approved: true,
-    } as never).select().single();
+    }).select().single();
 
     if (error) {
       return NextResponse.json(errorResponse(error.message), { status: 500 });

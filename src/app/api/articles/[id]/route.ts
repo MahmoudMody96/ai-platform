@@ -10,7 +10,7 @@ const mockArticles = [
   { id: '3', title: 'كيف تستخدم Claude في العمل', slug: 'using-claude-at-work', excerpt: 'دليل عملي لاستخدام Claude في بيئة العمل', content: 'Claude من Anthropic...', cover_image_url: null, category_id: '1', tags: ['claude', 'guide'], status: 'draft', featured: false, read_time: 6, author_id: '1', created_at: '2026-05-10', updated_at: '2026-05-15' },
 ];
 
-let articlesStore = [...mockArticles];
+const articlesStore = [...mockArticles];
 
 export async function GET(
   request: Request,

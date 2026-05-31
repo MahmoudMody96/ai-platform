@@ -115,13 +115,27 @@ export default function AdminToolsPage() {
   }, []);
 
   React.useEffect(() => {
-    fetchCategories();
-    fetchTools();
-  }, []);
-
-  React.useEffect(() => {
-    fetchTools();
-  }, [page, pageSize, searchQuery, selectedCategory, selectedPricing, fetchTools]);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [catsRes, toolsRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch(`/api/tools?page=${page}&pageSize=${pageSize}${searchQuery ? `&search=${searchQuery}` : ''}${selectedCategory ? `&category=${selectedCategory}` : ''}${selectedPricing ? `&pricing=${selectedPricing}` : ''}`)
+        ]);
+        const [catsData, toolsData] = await Promise.all([catsRes.json(), toolsRes.json()]);
+        if (catsData.success) setCategories(catsData.data || []);
+        if (toolsData.success) {
+          setTools(toolsData.data || []);
+          setTotalCount(toolsData.pagination?.totalCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [page, pageSize, searchQuery, selectedCategory, selectedPricing]);
 
   // Filter tools client-side for immediate feedback
   const filteredTools = React.useMemo(() => {

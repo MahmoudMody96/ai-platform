@@ -65,8 +65,8 @@ export default function AdminUsersPage() {
     display_name: '',
   });
 
-  // Fetch users
-  const fetchUsers = React.useCallback(async () => {
+  // Load users function
+  const loadUsers = React.useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -90,11 +90,13 @@ export default function AdminUsersPage() {
     }
   }, [page, pageSize, searchQuery, planFilter]);
 
+  // Initial load
   React.useEffect(() => {
-    fetchUsers();
-  }, []);
+    loadUsers();
+  }, [loadUsers]);
 
   // Handlers
+
   const handleEditUser = async () => {
     if (!selectedUser) return;
     
@@ -113,7 +115,7 @@ export default function AdminUsersPage() {
       
       const data = await response.json();
       if (data.success) {
-        fetchUsers();
+        loadUsers();
         setShowEditDialog(false);
         setSelectedUser(null);
       } else {
@@ -138,7 +140,7 @@ export default function AdminUsersPage() {
       
       const data = await response.json();
       if (data.success) {
-        fetchUsers();
+        loadUsers();
         setShowDeleteDialog(false);
         setSelectedUser(null);
       } else {

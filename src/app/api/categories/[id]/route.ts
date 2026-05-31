@@ -17,7 +17,7 @@ const mockCategories = [
   { id: '10', name: 'العروض', slug: 'presentations', description: 'أدوات العروض التقديمية', icon: '📽️', color: '#84CC16', sort_order: 10, parent_id: null, created_at: '2026-01-01' },
 ];
 
-let categoriesStore = [...mockCategories];
+const categoriesStore = [...mockCategories];
 
 export async function GET(
   request: Request,

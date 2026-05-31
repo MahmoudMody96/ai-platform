@@ -15,7 +15,7 @@ const favoriteSchema = z.object({
   article_id: z.string().uuid().optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -85,11 +85,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase.from('favorites').insert({
-      user_id: session.user.id,
-      tool_id: tool_id ?? null,
-      article_id: article_id ?? null,
-    } as never).select('id').single();
+    const { data, error } = await supabase
+      .from('favorites')
+      .insert({
+        user_id: session.user.id,
+        tool_id: tool_id ?? undefined,
+        article_id: article_id ?? undefined,
+      })
+      .select('id')
+      .single();
 
     if (error) {
       return NextResponse.json(errorResponse(error.message), { status: 500 });

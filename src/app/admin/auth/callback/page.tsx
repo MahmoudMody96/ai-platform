@@ -22,9 +22,10 @@ export default function AuthCallback() {
   const errorCode = searchParams.get('error_code');
   const type = searchParams.get('type'); // 'recovery', 'signup', 'email_change'
 
-  // Initialize Supabase client
+  // Client reference for Supabase (created lazily)
   const supabaseRef = React.useRef<ReturnType<typeof createBrowserClient> | null>(null);
 
+  // Handle the callback
   React.useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -35,12 +36,9 @@ export default function AuthCallback() {
       return;
     }
 
-    supabaseRef.current = createBrowserClient(supabaseUrl, supabaseAnonKey);
-  }, []);
-
-  // Handle the callback
-  React.useEffect(() => {
-    if (!supabaseRef.current) return;
+    if (!supabaseRef.current) {
+      supabaseRef.current = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    }
 
     const handleCallback = async () => {
       try {
@@ -52,7 +50,7 @@ export default function AuthCallback() {
         }
 
         // Handle the auth callback (this processes tokens from URL)
-        const { data, error: authError } = await supabaseRef.current!.auth.getSession();
+        const { data, authError } = await supabaseRef.current!.auth.getSession();
 
         if (authError) {
           setStatus('error');
@@ -82,7 +80,7 @@ export default function AuthCallback() {
           setStatus('success');
           setMessage('تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من بريدك.');
         }
-      } catch (err) {
+      } catch {
         setStatus('error');
         setMessage('حدث خطأ غير متوقع أثناء معالجة الطلب.');
       }

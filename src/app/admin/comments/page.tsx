@@ -87,9 +87,10 @@ export default function AdminCommentsPage() {
     }
   }, [page, pageSize, searchQuery, statusFilter]);
 
+  // Initial load
   React.useEffect(() => {
     fetchComments();
-  }, []);
+  }, [fetchComments]);
 
   // Handlers
   const handleApprove = async (comment: CommentData) => {

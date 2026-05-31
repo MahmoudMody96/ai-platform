@@ -12,7 +12,7 @@ const mockUsers = [
   { id: '5', email: 'fatma@example.com', display_name: 'فاطمة حسن', username: 'fatma_h', avatar_url: null, plan: 'free', role: 'user', created_at: '2026-04-05', updated_at: '2026-05-10' },
 ];
 
-let usersStore = [...mockUsers];
+const usersStore = [...mockUsers];
 
 export async function DELETE(
   request: Request,
