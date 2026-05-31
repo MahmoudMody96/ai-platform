@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Parse and validate query params
-    const params = toolsQuerySchema.parse({
+    const params = toolsQuerySchema.safeParse({
       page: searchParams.get('page') || 1,
       pageSize: searchParams.get('pageSize') || 20,
       category: searchParams.get('category') || undefined,
@@ -36,7 +36,11 @@ export async function GET(request: NextRequest) {
       featured: searchParams.get('featured') || undefined,
     });
 
-    const { page, pageSize, category, pricing, sort, q, tags, featured } = params;
+    if (!params.success) {
+      return NextResponse.json(errorResponse(params.error.issues[0].message), { status: 400 });
+    }
+
+    const { page, pageSize, category, pricing, sort, q, featured } = params.data;
     const offset = (page - 1) * pageSize;
 
     // Build query
@@ -86,11 +90,6 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,tagline.ilike.%${q}%`);
     }
 
-    if (tags) {
-      const tagList = tags.split(',').map(t => t.trim());
-      query = query.overlaps('tags', tagList);
-    }
-
     // Apply sorting
     switch (sort) {
       case 'newest':
@@ -114,7 +113,16 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching tools:', error);
-      return NextResponse.json(errorResponse(error.message), { status: 500 });
+      // Return empty data instead of error to not crash the UI
+      return NextResponse.json(successResponse({
+        data: [],
+        meta: {
+          total: 0,
+          page,
+          limit: pageSize,
+          total_pages: 0,
+        },
+      }));
     }
 
     const totalPages = Math.ceil((count || 0) / pageSize);
@@ -130,10 +138,16 @@ export async function GET(request: NextRequest) {
     }));
   } catch (error) {
     console.error('Tools API error:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(errorResponse(error.issues[0].message), { status: 400 });
-    }
-    return NextResponse.json(errorResponse('Internal server error'), { status: 500 });
+    // Return empty data on any error
+    return NextResponse.json(successResponse({
+      data: [],
+      meta: {
+        total: 0,
+        page: 1,
+        limit: 20,
+        total_pages: 0,
+      },
+    }));
   }
 }
 

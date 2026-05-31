@@ -406,7 +406,7 @@ export default function HomePage() {
               </Link>
               <Link href="/blog">
                 <Button size="xl" variant="outline" className="gap-2 w-full sm:w-auto">
-                  <BookOpen className="w-5 ICON-CLASS" />
+                  <BookOpen className="w-5" />
                   اقرأ المقالات
                 </Button>
               </Link>
