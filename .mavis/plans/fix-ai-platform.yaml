@@ -1,0 +1,236 @@
+version: 1
+plan:
+  name: 'إصلاح شامل لمنصة AI - لوحة تحكم + موقع'
+  max_concurrency: 5
+  max_consecutive_failures: 2
+  max_cycles: 15
+  verifier_config:
+    default_verifiers: [verifier]
+    audit_sample_rate: 0.0
+
+tasks:
+  - id: site-audit
+    title: 'تدقيق شامل للموقع - فحص كل الصفحات'
+    prompt: 'Run comprehensive audit of the AI Platform:
+1. Start dev server and check all public pages: homepage (/), /tools, /categories, /blog
+2. Check all admin pages: /admin, /admin/tools, /admin/categories, /admin/articles, /admin/comments, /admin/users
+3. Test API endpoints with curl/browser
+4. Document ALL errors, missing components, broken links, and UI issues
+5. Output: detailed report in docs/audit-report.md with file:line for each issue'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Verify audit report is comprehensive, run dev server to confirm issues exist as documented'
+    timeout_ms: 1800000
+
+  - id: fix-public-homepage
+    title: 'إصلاح الصفحة الرئيسية للموقع'
+    prompt: 'Fix homepage (src/app/page.tsx):
+1. Remove unused imports
+2. Fix all rendering errors
+3. Make sure all sections load correctly
+4. Test newsletter subscription works
+5. Commit with message "fix: resolve homepage rendering issues"
+Verify: npm run build passes'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Run npm run build, check homepage renders without errors, verify all sections visible'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-public-tools
+    title: 'إصلاح صفحة الأدوات'
+    prompt: 'Fix tools page (src/app/tools/page.tsx):
+1. Remove unused imports (Heart, SortOption)
+2. Fix any rendering issues
+3. Verify tools load from API
+4. Test filters work correctly
+5. Commit with message "fix: resolve tools page issues"
+Verify: npm run build passes'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Check tools page loads, verify filters work, no console errors'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-public-categories
+    title: 'إصلاح صفحات التصنيفات'
+    prompt: 'Fix categories pages:
+1. src/app/categories/page.tsx - remove unused Avatar imports
+2. src/app/categories/[slug]/page.tsx - fix all issues
+3. Verify categories load correctly
+4. Commit with message "fix: resolve categories pages issues"
+Verify: npm run build passes'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Check categories pages load, verify tools list displays correctly'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-public-blog
+    title: 'إصلاح صفحات المدونة'
+    prompt: 'Fix blog pages:
+1. src/app/blog/page.tsx - remove unused imports (Eye, ArrowRight, Loader2)
+2. src/app/blog/[slug]/page.tsx - remove unused imports and variables
+3. Fix any rendering issues
+4. Commit with message "fix: resolve blog pages issues"
+Verify: npm run build passes'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Check blog pages load correctly, no console errors'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-auth-pages
+    title: 'إصلاح صفحات المصادقة'
+    prompt: 'Fix auth pages:
+1. src/app/auth/login/page.tsx - verify login works
+2. src/app/auth/register/page.tsx - verify registration works
+3. src/app/auth/profile/page.tsx - verify profile editing works
+4. src/app/auth/callback/page.tsx - verify OAuth callback works
+5. Commit with message "fix: resolve auth pages issues"
+Verify: npm run build passes and all auth flows work'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test login/register/logout flows, verify profile updates work'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-dashboard
+    title: 'إصلاح لوحة تحكم Admin'
+    prompt: 'Fix admin dashboard and layout:
+1. src/app/admin/page.tsx - verify dashboard loads
+2. src/app/admin/layout.tsx - verify admin layout correct
+3. Check all admin sidebar links work
+4. Verify admin auth protection works
+5. Commit with message "fix: resolve admin dashboard issues"
+Verify: npm run build passes, admin pages protected'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Check admin dashboard loads, verify sidebar navigation works, test auth protection'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-manage-tools
+    title: 'إصلاح إدارة الأدوات في Admin'
+    prompt: 'Fix admin tools management:
+1. src/app/admin/tools/page.tsx - verify CRUD works
+2. Verify add/edit/delete tool modals work
+3. Fix any form validation issues
+4. Commit with message "fix: resolve admin tools management"
+Verify: npm run build passes, forms work correctly'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test adding/editing/deleting tools, verify forms validate correctly'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-manage-categories
+    title: 'إصلاح إدارة التصنيفات في Admin'
+    prompt: 'Fix admin categories management:
+1. src/app/admin/categories/page.tsx - verify CRUD works
+2. Verify category reordering works
+3. Fix any form validation issues
+4. Commit with message "fix: resolve admin categories management"
+Verify: npm run build passes, category management works'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test adding/editing/deleting/reordering categories'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-manage-articles
+    title: 'إصلاح إدارة المقالات في Admin'
+    prompt: 'Fix admin articles management:
+1. src/app/admin/articles/page.tsx - verify CRUD works
+2. Verify article status changes work
+3. Fix any form validation issues
+4. Commit with message "fix: resolve admin articles management"
+Verify: npm run build passes, article management works'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test adding/editing/publishing articles'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-manage-comments
+    title: 'إصلاح إدارة التعليقات في Admin'
+    prompt: 'Fix admin comments management:
+1. src/app/admin/comments/page.tsx - verify approve/reject works
+2. Verify comment filtering works
+3. Fix any pagination issues
+4. Commit with message "fix: resolve admin comments management"
+Verify: npm run build passes, comment moderation works'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test approving/rejecting comments, verify pagination works'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-admin-manage-users
+    title: 'إصلاح إدارة المستخدمين في Admin'
+    prompt: 'Fix admin users management:
+1. src/app/admin/users/page.tsx - verify user management works
+2. Verify role/plan changes work
+3. Fix any pagination issues
+4. Commit with message "fix: resolve admin users management"
+Verify: npm run build passes, user management works'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test editing user roles/plans, verify pagination works'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: fix-user-dashboard
+    title: 'إصلاح لوحة تحكم المستخدم'
+    prompt: 'Fix user dashboard:
+1. src/app/dashboard/page.tsx - verify favorites load
+2. Verify tabs (saved, reviews, collections) work
+3. Fix any loading states
+4. Commit with message "fix: resolve user dashboard issues"
+Verify: npm run build passes, dashboard works for logged users'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Test as logged-in user, verify favorites save/remove work'
+    depends_on: [site-audit]
+    timeout_ms: 1800000
+
+  - id: api-verification
+    title: 'التحقق من عمل كل الـ APIs'
+    prompt: 'Verify all API endpoints work:
+1. Test /api/tools - GET/POST
+2. Test /api/categories - GET/POST
+3. Test /api/articles - GET/POST
+4. Test /api/search - POST
+5. Test /api/favorites - GET/POST/DELETE
+6. Test /api/reviews - GET/POST
+7. Test /api/newsletter/subscribe - POST
+8. Test /api/admin/* endpoints
+9. Fix any broken endpoints
+10. Commit with message "fix: verify and fix API endpoints"
+Verify: All endpoints return expected responses'
+    assigned_to: coder
+    verified_by: verifier
+    verify_prompt: 'Re-test all API endpoints, verify they return correct status codes and data structure'
+    depends_on: [fix-public-homepage, fix-admin-dashboard]
+    timeout_ms: 1800000
+
+  - id: final-build-test
+    title: 'اختبار البناء النهائي'
+    prompt: 'Final verification:
+1. Run npm run build - must pass with no errors
+2. Run npx eslint src/app --no-ignore - must have no errors (warnings OK)
+3. Start dev server and verify:
+   - Homepage loads correctly
+   - Tools page works
+   - Categories work
+   - Blog works
+   - Admin dashboard works
+   - User dashboard works
+   - Auth flows work
+4. Report final status
+Output: docs/final-report.md with status of each component'
+    assigned_to: verifier
+    verified_by: verifier
+    verify_prompt: 'Re-run build and dev server checks, confirm all issues are resolved'
+    depends_on: [fix-public-homepage, fix-public-tools, fix-public-categories, fix-public-blog, fix-auth-pages, fix-admin-dashboard, fix-admin-manage-tools, fix-admin-manage-categories, fix-admin-manage-articles, fix-admin-manage-comments, fix-admin-manage-users, fix-user-dashboard, api-verification]
+    timeout_ms: 1800000
