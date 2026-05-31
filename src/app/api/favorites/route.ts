@@ -15,7 +15,7 @@ const favoriteSchema = z.object({
   article_id: z.string().uuid().optional(),
 });
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
 

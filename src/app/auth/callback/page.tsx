@@ -13,7 +13,7 @@ function AuthCallbackContent() {
     const errorParam = params.get('error');
 
     if (errorParam) {
-      setError(errorParam);
+      queueMicrotask(() => setError(errorParam));
       return;
     }
 

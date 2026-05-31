@@ -65,7 +65,7 @@ export default function AdminCommentsPage() {
   // Fetch comments
   const fetchComments = React.useCallback(async () => {
     try {
-      setLoading(true);
+      queueMicrotask(() => setLoading(true));
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -77,13 +77,15 @@ export default function AdminCommentsPage() {
       const data = await response.json();
       
       if (data.success) {
-        setComments(data.data || []);
-        setTotalCount(data.pagination?.totalCount || 0);
+        queueMicrotask(() => {
+          setComments(data.data || []);
+          setTotalCount(data.pagination?.totalCount || 0);
+          setLoading(false);
+        });
       }
     } catch (error) {
       console.error('Failed to fetch comments:', error);
-    } finally {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
     }
   }, [page, pageSize, searchQuery, statusFilter]);
 

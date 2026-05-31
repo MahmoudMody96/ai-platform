@@ -31,8 +31,10 @@ export default function AuthCallback() {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      setStatus('error');
-      setMessage('Supabase is not configured. Please contact the administrator.');
+      queueMicrotask(() => {
+        setStatus('error');
+        setMessage('Supabase is not configured. Please contact the administrator.');
+      });
       return;
     }
 
@@ -44,8 +46,10 @@ export default function AuthCallback() {
       try {
         // Check for error in URL
         if (error) {
-          setStatus('error');
-          setMessage(getErrorMessage(error, errorCode));
+          queueMicrotask(() => {
+            setStatus('error');
+            setMessage(getErrorMessage(error, errorCode));
+          });
           return;
         }
 
@@ -53,23 +57,27 @@ export default function AuthCallback() {
         const { data, authError } = await supabaseRef.current!.auth.getSession();
 
         if (authError) {
-          setStatus('error');
-          setMessage(getErrorMessage(authError.message));
+          queueMicrotask(() => {
+            setStatus('error');
+            setMessage(getErrorMessage(authError.message));
+          });
           return;
         }
 
         // If we have a session, auth was successful
         if (data.session) {
-          setStatus('success');
-
-          // Handle different callback types
-          if (type === 'recovery') {
-            setMessage('تم التحقق من حسابك بنجاح! يمكنك الآن تعيين كلمة مرور جديدة.');
-          } else if (type === 'email_change') {
-            setMessage('تم تحديث بريدك الإلكتروني بنجاح!');
-          } else {
-            setMessage('تم تسجيل الدخول بنجاح!');
-          }
+          queueMicrotask(() => {
+            setStatus('success');
+            
+            // Handle different callback types
+            if (type === 'recovery') {
+              setMessage('تم التحقق من حسابك بنجاح! يمكنك الآن تعيين كلمة مرور جديدة.');
+            } else if (type === 'email_change') {
+              setMessage('تم تحديث بريدك الإلكتروني بنجاح!');
+            } else {
+              setMessage('تم تسجيل الدخول بنجاح!');
+            }
+          });
 
           // Redirect to admin after 3 seconds
           setTimeout(() => {
@@ -77,12 +85,16 @@ export default function AuthCallback() {
           }, 3000);
         } else {
           // No session but no error - might be a pending confirmation
-          setStatus('success');
-          setMessage('تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من بريدك.');
+          queueMicrotask(() => {
+            setStatus('success');
+            setMessage('تم إرسال رابط التحقق إلى بريدك الإلكتروني. يرجى التحقق من بريدك.');
+          });
         }
       } catch {
-        setStatus('error');
-        setMessage('حدث خطأ غير متوقع أثناء معالجة الطلب.');
+        queueMicrotask(() => {
+          setStatus('error');
+          setMessage('حدث خطأ غير متوقع أثناء معالجة الطلب.');
+        });
       }
     };
 

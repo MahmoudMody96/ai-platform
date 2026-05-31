@@ -101,19 +101,6 @@ export default function AdminToolsPage() {
     }
   }, [page, pageSize, searchQuery, selectedCategory, selectedPricing]);
 
-  // Fetch categories
-  const fetchCategories = React.useCallback(async () => {
-    try {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  }, []);
-
   React.useEffect(() => {
     const loadData = async () => {
       try {

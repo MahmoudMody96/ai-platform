@@ -11,10 +11,8 @@ import {
   Eye, 
   ChevronLeft,
   ArrowRight,
-  Loader2,
   Tag,
   TrendingUp,
-  PenLine,
   FileText,
 } from 'lucide-react';
 import { ThemeToggle } from '@/contexts/ThemeContext';

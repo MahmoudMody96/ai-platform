@@ -2,8 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Sparkles, Plus, ExternalLink, Check, Loader2, ArrowRight, X } from 'lucide-react';
+import { Sparkles, Plus, Check, Loader2, ArrowRight, X } from 'lucide-react';
 import { ThemeToggle } from '@/contexts/ThemeContext';
 
 // AL.AI.DY Colors
@@ -50,7 +49,6 @@ interface FormData {
 }
 
 export default function AddToolPage() {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});

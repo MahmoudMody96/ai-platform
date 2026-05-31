@@ -25,13 +25,13 @@ interface UserProfile {
   updated_at: string;
 }
 
-const planLabels: Record<string, { label: string; variant: string }> = {
-  free: { label: 'Free', variant: 'outline' },
+  const planLabels: Record<string, { label: string; variant: 'success' | 'secondary' | 'accent' | 'default' | 'warning' | 'error' }> = {
+  free: { label: 'مجاني', variant: 'success' },
   pro: { label: 'Pro', variant: 'secondary' },
   team: { label: 'Team', variant: 'accent' },
 };
 
-const roleLabels: Record<string, { label: string; variant: string }> = {
+const roleLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'outline' | 'ghost' | 'destructive' }> = {
   admin: { label: 'مدير', variant: 'error' },
   editor: { label: 'محرر', variant: 'warning' },
   user: { label: 'مستخدم', variant: 'default' },
@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
   // Load users function
   const loadUsers = React.useCallback(async () => {
     try {
-      setLoading(true);
+      queueMicrotask(() => setLoading(true));
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -80,13 +80,15 @@ export default function AdminUsersPage() {
       const data = await response.json();
       
       if (data.success) {
-        setUsers(data.data || []);
-        setTotalCount(data.pagination?.totalCount || 0);
+        queueMicrotask(() => {
+          setUsers(data.data || []);
+          setTotalCount(data.pagination?.totalCount || 0);
+          setLoading(false);
+        });
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
-    } finally {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
     }
   }, [page, pageSize, searchQuery, planFilter]);
 
@@ -261,12 +263,12 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={planLabels[user.plan]?.variant as any || 'outline'}>
+                        <Badge variant={planLabels[user.plan]?.variant || 'outline'}>
                           {planLabels[user.plan]?.label || user.plan}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={roleLabels[user.role || 'user']?.variant as any || 'default'}>
+                        <Badge variant={roleLabels[user.role || 'user']?.variant || 'default'}>
                           {user.role ? (
                             roleLabels[user.role]?.label || user.role
                           ) : (
@@ -396,13 +398,13 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">الباقة</p>
-                  <Badge variant={planLabels[selectedUser.plan]?.variant as any || 'outline'}>
+                  <Badge variant={planLabels[selectedUser.plan]?.variant || 'outline'}>
                     {planLabels[selectedUser.plan]?.label || selectedUser.plan}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">الدور</p>
-                  <Badge variant={roleLabels[selectedUser.role || 'user']?.variant as any || 'default'}>
+                  <Badge variant={roleLabels[selectedUser.role || 'user']?.variant || 'default'}>
                     {selectedUser.role ? roleLabels[selectedUser.role]?.label : 'مستخدم'}
                   </Badge>
                 </div>

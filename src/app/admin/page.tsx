@@ -51,15 +51,15 @@ export default function AdminDashboard() {
       const data = await response.json();
       
       if (data.success) {
-        setStats(data.data);
+        queueMicrotask(() => setStats(data.data));
       } else {
-        setError(data.error || 'Failed to fetch stats');
+        queueMicrotask(() => setError(data.error || 'Failed to fetch stats'));
       }
     } catch (err) {
-      setError('Failed to connect to server');
       console.error('Dashboard fetch error:', err);
+      queueMicrotask(() => setError('Failed to connect to server'));
     } finally {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
     }
   }, []);
 
