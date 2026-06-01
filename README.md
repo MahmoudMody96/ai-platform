@@ -25,6 +25,7 @@
 | [14](#14-checklists) | Checklists |
 | [15](#15-التحديثات-الأخيرة) | التحديثات الأخيرة (2026-06-01) |
 | [16](#16-troubleshooting) | Troubleshooting (Vercel deployment) |
+| [17](#17-database-reset) | Database Reset (محو + إعادة تطبيق) |
 
 ---
 
@@ -1568,7 +1569,68 @@ SEO:
 
 ---
 
-## 16. Troubleshooting
+## 17. Database Reset (محو + إعادة تطبيق)
+
+> 📄 الوثائق الكاملة: [`supabase/README.md`](./supabase/README.md)
+
+### متى تحتاج تعمل reset؟
+
+- الـ DB فيها **بيانات Chinese** قديمة (placeholder من migration قديم)
+- عايز تـ **re-apply الـ schema** بشكل نضيف بعد تعديلات
+- عايز تـ **wipe local development DB** وتجرب من الأول
+
+### الـ 3 ملفات اللي محتاج تعرفهم:
+
+| الملف | الوظيفة |
+|------|---------|
+| `supabase/migrations/000_reset_all.sql` | ⚠️ **DESTRUCTIVE** — يمسح كل حاجة في `public` |
+| `supabase/schema.sql` | 🔑 **Canonical** — schema موحّد (14 جدول، ENUMs، RLS) |
+| `supabase/migrations/003_arabic_seed_data.sql` | 🌱 Arabic seed (8 categories، 11 tools، 3 articles) |
+| `supabase/scripts/reset-and-apply.sql` | 🎯 One-shot: reset + schema + seed |
+
+### أسهل طريقة (Supabase Dashboard):
+
+1. روح لـ [app.supabase.com](https://app.supabase.com) → المشروع بتاعك
+2. **SQL Editor** → **New query**
+3. افتح `supabase/scripts/reset-and-apply.sql` → **انسخ المحتوى كله** → **الصقه** → **Run**
+4. استنى ~10 ثواني
+5. تحقق بالـ query ده:
+   ```sql
+   SELECT 'tools' AS table, count(*) FROM tools
+   UNION ALL SELECT 'categories', count(*) FROM categories
+   UNION ALL SELECT 'articles', count(*) FROM articles
+   UNION ALL SELECT 'plans', count(*) FROM plans;
+   ```
+   **المتوقع:**
+   ```
+   tools       | 11
+   categories  | 8
+   articles    | 3
+   plans       | 4
+   ```
+
+### أو عن طريق Supabase CLI:
+
+```bash
+supabase link --project-ref <your-ref>
+supabase db reset --linked   # يمسح + يطبق الـ migrations كلها
+```
+
+### أو عن طريق psql:
+
+```bash
+export DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
+psql "$DATABASE_URL" -f supabase/scripts/reset-and-apply.sql
+```
+
+### ⚠️ تحذيرات:
+
+- **`000_reset_all.sql` بيحذف كل البيانات** — متـ runش على production فيه data حقيقية
+- الـ script مغلف بـ `BEGIN` / `COMMIT` transaction → **all-or-nothing**
+- بعد الـ reset **لازم** تشغّل `schema.sql` + الـ seed، أو الـ app هيكسر
+
+---
+
 
 ### 🔴 Build fails: `Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.`
 

@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — 2026-06-01
 
+### Added (db reset tooling)
+- `supabase/migrations/000_reset_all.sql` — DESTRUCTIVE: drops every
+  table, enum, function, trigger, and policy in the `public` schema.
+  Wrapped in a transaction (all-or-nothing). Use this when wiping
+  stale or inconsistent data.
+- `supabase/scripts/reset-and-apply.sql` — One-shot convenience that
+  chains reset → schema → seed. Run via Supabase SQL Editor or psql.
+- `supabase/README.md` — Documentation for the supabase/ directory:
+  the 3-step reset procedure, how to run via Dashboard / CLI / psql,
+  and verification queries.
+
 ### Fixed (build)
 - **Vercel build crash: "Invalid supabaseUrl"** — `@supabase/ssr` was
   throwing during `next build` prerender when the env vars were
