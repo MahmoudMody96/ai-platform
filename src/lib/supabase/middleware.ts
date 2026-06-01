@@ -4,7 +4,7 @@
 // =============================================
 
 import { NextResponse } from 'next/server';
-import { createServerClient } from './client';
+import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Cookie names used by Supabase
@@ -50,6 +50,35 @@ export interface AuthenticatedUser {
 // Client type alias
 type ClientType = SupabaseClient;
 
+// ============================================================================
+// SECURITY: Role must come from the database (profiles.role),
+// NOT from user.user_metadata which is client-editable.
+// ============================================================================
+
+/**
+ * Fetch the user's role from the profiles table.
+ * RLS ensures a user can only read their own row (and admins can read all).
+ * Returns null if no row or not configured.
+ */
+export async function getRoleFromProfiles(
+  supabase: ClientType,
+  userId: string
+): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return (data.role as string | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Create Supabase client for middleware context
  * Uses cookies directly without Next.js response helpers
@@ -57,12 +86,27 @@ type ClientType = SupabaseClient;
 export function createMiddlewareClient(
   cookies: Record<string, string | undefined>
 ): ClientType {
-  return createServerClient(cookies);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return Object.entries(cookies).map(([name, value]) => ({
+          name,
+          value: value ?? '',
+        }));
+      },
+      setAll() {
+        // No-op in legacy helper; the real cookie refresh happens in proxy.ts
+      },
+    },
+  });
 }
 
 /**
- * Get the current user from the request cookies
- * Returns null if not authenticated
+ * Get the current user from the request cookies.
+ * NOTE: `role` is intentionally NOT populated here. Use `getRoleFromProfiles`
+ * if you need a server-trusted role.
  */
 export async function getUserFromRequest(supabase: ClientType): Promise<AuthenticatedUser | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -74,7 +118,7 @@ export async function getUserFromRequest(supabase: ClientType): Promise<Authenti
   return {
     id: user.id,
     email: user.email ?? '',
-    role: user.user_metadata?.role as string | undefined,
+    // role is intentionally omitted — see getRoleFromProfiles
   };
 }
 
@@ -104,18 +148,10 @@ export function isAuthenticated(cookies: Record<string, string | undefined>): bo
  * Use this when setting cookies after login
  */
 export async function createAuthResponse(
-  request: Request,
-  supabase: ClientType
+  _request: Request,
+  _supabase: ClientType
 ): Promise<NextResponse> {
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  const response = NextResponse.next();
-
-  if (error || !user) {
-    return response;
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
 /**
@@ -153,7 +189,6 @@ export async function refreshSession(
   return {
     id: user.id,
     email: user.email ?? '',
-    role: user.user_metadata?.role as string | undefined,
   };
 }
 
@@ -197,7 +232,8 @@ export async function optionalAuth(
 
 /**
  * Admin role check middleware wrapper
- * Checks if the authenticated user has admin role
+ * Checks if the authenticated user has admin role via the profiles table
+ * (NOT user_metadata — that's client-editable!)
  */
 export async function requireAdmin(
   supabase: ClientType,
@@ -209,12 +245,15 @@ export async function requireAdmin(
     return { user: null, response };
   }
 
-  if (user.role !== 'admin') {
+  // Look up role from DB
+  const dbRole = await getRoleFromProfiles(supabase, user.id);
+
+  if (dbRole !== 'admin' && dbRole !== 'super_admin') {
     return {
       user: null,
       response: NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')),
     };
   }
 
-  return { user, response };
+  return { user: { ...user, role: dbRole }, response };
 }

@@ -5,7 +5,8 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createBrowserClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
+import { rateLimiters } from '@/lib/ratelimit';
 
 // ============================================================================
 // Supabase Configuration
@@ -35,25 +36,58 @@ const publicPaths = [
 
 // ============================================================================
 // Supabase Client Factory (Middleware)
+// Uses createServerClient so we can update response cookies
 // ============================================================================
 
-function createSupabaseMiddlewareClient(request: NextRequest) {
+function createSupabaseMiddlewareClient(request: NextRequest, response: NextResponse) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return null;
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
+          // Update request cookies (so server components see the latest)
           request.cookies.set(name, value);
+          // Update response cookies (so browser persists them)
+          response.cookies.set(name, value, {
+            ...options,
+            httpOnly: options?.httpOnly ?? true,
+            sameSite: options?.sameSite ?? 'lax',
+            secure: process.env.NODE_ENV === 'production',
+          });
         });
       },
     },
   });
+}
+
+// ============================================================================
+// Role lookup — reads from profiles table (server-trusted, RLS-protected)
+// NOT from user.user_metadata (client-editable!)
+// ============================================================================
+
+async function getUserRole(
+  supabase: ReturnType<typeof createSupabaseMiddlewareClient> extends infer T ? T : never,
+  userId: string
+): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return data.role ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ============================================================================
@@ -82,23 +116,43 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Lightweight rate limiting on every proxy invocation
+  // (Full per-endpoint limits happen in API routes)
+  try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'anonymous';
+    const { success } = await rateLimiters.proxy.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests' },
+        { status: 429 }
+      );
+    }
+  } catch {
+    // If Upstash isn't configured, don't block
+  }
+
+  // Build a single response we can mutate for cookie propagation
+  const response = NextResponse.next();
+
   // Admin routes protection
   if (pathname.startsWith('/admin')) {
     // Skip main admin page and login page - they handle their own auth
     if (pathname === '/admin' || pathname === '/admin/login') {
-      return NextResponse.next();
+      return response;
     }
 
     // Check if Supabase is configured
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('Supabase not configured, skipping admin auth check');
-      return NextResponse.next();
+      return response;
     }
 
-    const supabase = createSupabaseMiddlewareClient(request);
+    const supabase = createSupabaseMiddlewareClient(request, response);
     if (!supabase) {
       console.error('Failed to create Supabase client in middleware');
-      return NextResponse.next();
+      return response;
     }
 
     // Get current user from session
@@ -112,10 +166,12 @@ export async function proxy(request: NextRequest) {
     }
 
     const user = userData.user;
-    const userRole = user.user_metadata?.role as string | undefined;
+
+    // ✅ SECURITY FIX: look up role from DB, not user_metadata
+    const userRole = await getUserRole(supabase, user.id);
 
     // Check admin role
-    if (userRole !== 'admin' && userRole !== 'editor') {
+    if (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'editor') {
       // User doesn't have admin/editor role
       const adminUrl = new URL('/admin', request.url);
       adminUrl.searchParams.set('error', 'access_denied');
@@ -123,7 +179,6 @@ export async function proxy(request: NextRequest) {
     }
 
     // Add user info to headers for downstream use
-    const response = NextResponse.next();
     response.headers.set('x-user-id', user.id);
     response.headers.set('x-user-email', user.email ?? '');
     response.headers.set('x-user-role', userRole ?? 'user');
@@ -134,12 +189,12 @@ export async function proxy(request: NextRequest) {
   // Dashboard routes protection
   if (pathname.startsWith('/dashboard')) {
     if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.next();
+      return response;
     }
 
-    const supabase = createSupabaseMiddlewareClient(request);
+    const supabase = createSupabaseMiddlewareClient(request, response);
     if (!supabase) {
-      return NextResponse.next();
+      return response;
     }
 
     const { data: userData } = await supabase.auth.getUser();
@@ -153,17 +208,15 @@ export async function proxy(request: NextRequest) {
 
   // API routes - add common headers
   if (pathname.startsWith('/api')) {
-    const response = NextResponse.next();
-    
     // Add security headers
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'SAMEORIGIN');
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 // ============================================================================
