@@ -40,18 +40,26 @@ export interface Database {
           tagline: string | null
           description: string | null
           description_en: string | null
+          long_description: string | null
           website_url: string
+          documentation_url: string | null
           logo_url: string | null
           screenshot_url: string | null
           category_id: string | null
           tags: string[]
           pricing_type: 'free' | 'freemium' | 'paid' | 'enterprise' | 'contact'
-          starting_price: number | null
           pricing_currency: string
+          starting_price: number | null
+          monthly_price: number | null
+          pricing_model: string | null
+          pricing_info: Json
+          screenshots: Json
           has_free_trial: boolean
           trial_days: number | null
           rating_avg: number
           rating_count: number
+          rating: number | null
+          review_count: number | null
           meta_title: string | null
           meta_description: string | null
           views_count: number
@@ -60,9 +68,13 @@ export interface Database {
           status: 'pending' | 'published' | 'rejected' | 'archived'
           is_featured: boolean
           is_sponsored: boolean
+          is_verified: boolean
+          is_published: boolean
           sponsored_until: string | null
           features: Json
           pricing_plans: Json
+          pros: Json
+          cons: Json
           submitted_by: string | null
           created_at: string
           updated_at: string
@@ -118,15 +130,24 @@ export interface Database {
           excerpt: string | null
           content: string | null
           cover_image_url: string | null
+          cover_image: string | null
           author_id: string | null
+          author_name: string | null
           category_id: string | null
+          category: string | null
           tags: string[]
           related_tools: string[]
           meta_title: string | null
           meta_description: string | null
           views_count: number
+          views: number | null
+          likes_count: number
           reading_time: number | null
+          read_time: number | null
           status: 'draft' | 'published' | 'archived'
+          featured: boolean
+          is_published: boolean
+          is_premium: boolean
           published_at: string | null
           created_at: string
           updated_at: string
@@ -222,7 +243,7 @@ export interface ReviewWithAuthor extends Review {
   author: Profile
 }
 
-export interface ArticleWithAuthor extends Article {
+export interface ArticleWithAuthor extends Omit<Article, 'category'> {
   author: Profile | null
   category: Category | null
 }
