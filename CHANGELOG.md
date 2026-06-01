@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — 2026-06-01
 
+### Fixed (build)
+- **Vercel build crash: "Invalid supabaseUrl"** — `@supabase/ssr` was
+  throwing during `next build` prerender when the env vars were
+  missing or empty (e.g. in a fresh Vercel project before secrets
+  were configured). The supabase client factories in
+  `src/lib/supabase/client.ts` and the local helpers in
+  `AuthContext.tsx` / `FavoritesContext.tsx` now return `null` instead
+  of throwing. The app renders a degraded-but-functional state
+  (auth + DB features disabled) until env vars are configured.
+
+### Docs
+- `.env.example`: added a Vercel deployment checklist with the exact
+  steps to wire env vars in the dashboard.
+- `README.md`: added a **Troubleshooting** section (section 16) with
+  the "Invalid supabaseUrl" fix, CORS instructions, and the most
+  common deployment-time gotchas.
+
+---
+
+## [Unreleased] — 2026-06-01
+
 ### Security (CRITICAL)
 - **Fixed privilege escalation in proxy.ts** — role check was reading from
   `user.user_metadata?.role` (client-editable) and is now read from the

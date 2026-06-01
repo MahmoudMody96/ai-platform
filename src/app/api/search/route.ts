@@ -18,7 +18,15 @@ interface SearchResult {
 // POST /api/search - Full-text search
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Parse and validate body
     const body = await request.json();

@@ -1,57 +1,88 @@
 // =============================================
 // AI Platform - Supabase Client Configuration
 // =============================================
+//
+// Every factory in this file returns `SupabaseClient | null`.
+// Callers MUST null-check before using the client. This is critical
+// during `next build` and Vercel prerender, where environment
+// variables may not be set yet (or the project is being built
+// without secrets for a smoke check).
+//
+// The original `validateEnv()` that *threw* is now a soft `isConfigured()`
+// helper that callers can use to decide whether to render a
+// "configure Supabase" placeholder instead of crashing the build.
+// =============================================
 
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserClient as createBrowserClientSSR } from '@supabase/ssr';
 
-// Environment variables with fallbacks
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+// ============================================================================
+// Environment access (defensive)
+// ============================================================================
 
-// Singleton instance for server-side usage
-let serverClientInstance: SupabaseClient | null = null;
+function getSupabaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+}
 
-/**
- * Validate environment variables
- */
-function validateEnv(): void {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. ' +
-      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
-    );
+function getSupabaseAnonKey(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+}
+
+function getSupabaseServiceKey(): string {
+  // SERVER-ONLY — never expose to the browser bundle.
+  if (typeof window !== 'undefined') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[supabase] SUPABASE_SERVICE_ROLE_KEY accessed from the client. This is a bug.');
+    }
+    return '';
   }
+  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 }
 
-/**
- * Create a standard Supabase client (server-side only)
- * Use this only in API routes, RSC without cookies access
- */
-export function createClient(): SupabaseClient {
-  validateEnv();
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey);
+/** Returns true only when both public vars are set and look like a URL. */
+export function isSupabaseConfigured(): boolean {
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+  if (!url || !key) return false;
+  if (!url.startsWith('https://') && !url.startsWith('http://')) return false;
+  return true;
 }
 
-/**
- * Create a browser client using @supabase/ssr (for client components)
- * Handles cookie management automatically
- */
-export function createBrowserClient(): SupabaseClient {
-  validateEnv();
-  return createBrowserClientSSR(supabaseUrl, supabaseAnonKey);
+// Singleton for server-side usage without cookies
+let _serverClient: SupabaseClient | null = null;
+
+// ============================================================================
+// Server-side (no cookies) — for API routes that need anon auth
+// ============================================================================
+
+export function createClient(): SupabaseClient | null {
+  if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[supabase] NEXT_PUBLIC_SUPABASE_URL/ANON_KEY missing — returning null client');
+    }
+    return null;
+  }
+  return createSupabaseClient(getSupabaseUrl(), getSupabaseAnonKey());
 }
 
-/**
- * Create a server client for Server Components and Route Handlers
- * Uses cookies for session management via @supabase/ssr
- */
+// ============================================================================
+// Browser client (uses @supabase/ssr for cookie-aware sessions)
+// ============================================================================
+
+export function createBrowserClient(): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+  return createBrowserClientSSR(getSupabaseUrl(), getSupabaseAnonKey());
+}
+
+// ============================================================================
+// Server client for Server Components / Route Handlers (cookie-aware)
+// ============================================================================
+
 export function createServerClient(
   cookies: Record<string, string | undefined>
-): SupabaseClient {
-  validateEnv();
-  return createBrowserClientSSR(supabaseUrl, supabaseAnonKey, {
+): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+  return createBrowserClientSSR(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
         return Object.entries(cookies).map(([name, value]) => ({
@@ -59,27 +90,25 @@ export function createServerClient(
           value: value ?? '',
         }));
       },
-      setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
-        cookiesToSet.forEach(({ name, value }) => {
-          cookies[name] = value;
-        });
+      setAll() {
+        // No-op in legacy helper; the real cookie refresh happens in proxy.ts
       },
     },
   });
 }
 
-/**
- * Create a server client with middleware cookie access
- * Preferred for Route Handlers that need to read/write cookies
- */
+// ============================================================================
+// Server client with middleware cookie access (for the proxy.ts integration)
+// ============================================================================
+
 export function createServerClientFromMiddleware(
   cookies: {
     get: (name: string) => string | undefined;
     set: (name: string, value: string, options: object) => void;
   }
-): SupabaseClient {
-  validateEnv();
-  return createBrowserClientSSR(supabaseUrl, supabaseAnonKey, {
+): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+  return createBrowserClientSSR(getSupabaseUrl(), getSupabaseAnonKey(), {
     cookies: {
       getAll() {
         return [
@@ -91,7 +120,7 @@ export function createServerClientFromMiddleware(
             name: 'sb-refresh-token',
             value: cookies.get('sb-refresh-token') ?? '',
           },
-        ].filter(c => c.value);
+        ].filter((c) => c.value);
       },
       setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
         cookiesToSet.forEach(({ name, value, options }) => {
@@ -102,29 +131,30 @@ export function createServerClientFromMiddleware(
   });
 }
 
-/**
- * Get singleton server client instance
- * WARNING: Reuses the same instance across requests. Not suitable for multi-tenant apps.
- * Use only in contexts where session doesn't change per request.
- */
-export function getServerClient(): SupabaseClient {
-  if (!serverClientInstance) {
-    serverClientInstance = createClient();
+// ============================================================================
+// Singleton (server-side only, when no cookies are involved)
+// ============================================================================
+
+export function getServerClient(): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+  if (!_serverClient) {
+    _serverClient = createSupabaseClient(getSupabaseUrl(), getSupabaseAnonKey());
   }
-  return serverClientInstance;
+  return _serverClient;
 }
 
-/**
- * Create admin client with service role key (bypasses RLS)
- * Use only in secure server contexts - never expose to client
- */
-export function createAdminClient(): SupabaseClient {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error(
-      'Missing Supabase service role key. ' +
-      'Please set SUPABASE_SERVICE_ROLE_KEY'
-    );
-  }
+// ============================================================================
+// Admin client (bypasses RLS) — SERVER-ONLY
+// ============================================================================
 
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey);
+export function createAdminClient(): SupabaseClient | null {
+  if (typeof window !== 'undefined') {
+    throw new Error('[supabase] createAdminClient() must never be called from the client.');
+  }
+  const url = getSupabaseUrl();
+  const serviceKey = getSupabaseServiceKey();
+  if (!url || !serviceKey) {
+    return null;
+  }
+  return createSupabaseClient(url, serviceKey);
 }

@@ -28,7 +28,14 @@ function createSupabaseBrowserClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
   if (!supabaseUrl || !supabaseAnonKey) return null;
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  if (!supabaseUrl.startsWith('https://') && !supabaseUrl.startsWith('http://')) {
+    return null;
+  }
+  try {
+    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  } catch {
+    return null;
+  }
 }
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {

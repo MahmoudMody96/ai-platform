@@ -17,7 +17,15 @@ const favoriteSchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -50,7 +58,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -108,7 +124,15 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {

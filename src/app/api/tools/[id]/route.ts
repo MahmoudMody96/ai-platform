@@ -14,7 +14,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Try to find by ID or slug
     const { data: tool, error } = await supabase
@@ -105,7 +113,15 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check auth
     const { data: { session } } = await supabase.auth.getSession();
@@ -177,7 +193,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check auth
     const { data: { session } } = await supabase.auth.getSession();

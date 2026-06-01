@@ -17,6 +17,9 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
+  if (!supabase) {
+    return { title: 'AI Platform | Supabase not configured' };
+  }
 
   const { data: tool } = await supabase
     .from('tools')
@@ -33,6 +36,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ToolDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createClient();
+  if (!supabase) {
+    notFound();
+  }
 
   // Get tool data
   const { data: tool, error } = await supabase

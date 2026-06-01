@@ -15,7 +15,15 @@ export async function GET(request: NextRequest) {
   const featured = searchParams.get('featured');
 
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     let query = supabase
       .from('categories')
@@ -53,7 +61,15 @@ export async function GET(request: NextRequest) {
 // POST /api/categories - Create category (Admin)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check admin role
     const { data: { user } } = await supabase.auth.getUser();

@@ -24,6 +24,7 @@
 | [13](#13-agent-task-map) | Agent Task Map |
 | [14](#14-checklists) | Checklists |
 | [15](#15-التحديثات-الأخيرة) | التحديثات الأخيرة (2026-06-01) |
+| [16](#16-troubleshooting) | Troubleshooting (Vercel deployment) |
 
 ---
 
@@ -1567,7 +1568,42 @@ SEO:
 
 ---
 
-## 15. التحديثات الأخيرة
+## 16. Troubleshooting
+
+### 🔴 Build fails: `Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL.`
+
+**السبب:** الـ `NEXT_PUBLIC_SUPABASE_URL` و/أو `NEXT_PUBLIC_SUPABASE_ANON_KEY` مش متاحة في Vercel build environment.
+
+**الحل:**
+1. روح لـ [Vercel Dashboard](https://vercel.com/dashboard) → المشروع → **Settings** → **Environment Variables**
+2. تأكد إن الـ vars دي موجودة لـ **Production** و **Preview** environments:
+   - `NEXT_PUBLIC_SUPABASE_URL` = `https://your-project.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `eyJ...` (من Supabase dashboard)
+3. **Redeploy** (مش بس refresh — لازم build جديد)
+   - **Deployments** tab → آخر deployment → ⋯ menu → **Redeploy**
+   - أو ادفع commit جديد
+4. لو الـ vars لسه مش ظاهرة في الـ build، اتأكد إنك ضفتهم للـ **environment** الصح (Production vs Preview vs Development)
+
+**الوقاية:** الـ app دلوقتي defensive — لو الـ Supabase مش configured، الصفحات بتـ render عادي (مع disabled auth)، بدل ما الـ build يفشل. بس لازم تتـ configure عشان الـ features تشتغل.
+
+### 🔴 Runtime: `supabaseKey is required`
+
+نفس الحل — تأكد من `NEXT_PUBLIC_SUPABASE_ANON_KEY` في Vercel.
+
+### 🟡 CORS errors من Supabase
+
+روح لـ Supabase dashboard → **Authentication** → **URL Configuration** → ضيف الـ Vercel domain في **Site URL** و **Additional Redirect URLs**.
+
+### 🟡 Pages ترجع 500 في production
+
+افتح [Vercel logs](https://vercel.com/dashboard) → deployment → **Logs** tab. لو في `Missing NEXT_PUBLIC_SUPABASE_URL`، ارجع للخطوة 1.
+
+### 🟡 Auth callback مش شغّال
+
+تأكد إن `NEXT_PUBLIC_SITE_URL` في Vercel = الـ production domain (مش `http://localhost:3000`).
+
+---
+
 
 راجع [CHANGELOG.md](./CHANGELOG.md) للتفاصيل الكاملة. أهم الحاجات:
 

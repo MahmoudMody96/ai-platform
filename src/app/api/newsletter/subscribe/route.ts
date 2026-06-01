@@ -16,7 +16,15 @@ const subscribeSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     const body = await request.json();
     const validated = subscribeSchema.safeParse(body);
@@ -97,7 +105,15 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');

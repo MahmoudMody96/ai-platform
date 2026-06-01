@@ -13,7 +13,15 @@ import type { Profile as User } from '@/types';
 // GET /api/users - List users (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
     const { searchParams } = new URL(request.url);
 
     // Check authentication
@@ -75,7 +83,15 @@ export async function GET(request: NextRequest) {
 // PUT /api/users - Update user role
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('id');
 

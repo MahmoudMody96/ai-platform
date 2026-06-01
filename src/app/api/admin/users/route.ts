@@ -20,7 +20,15 @@ const updateUserSchema = z.object({
 // GET /api/admin/users - List all users
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check admin auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -95,7 +103,15 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin/users - Update user
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check admin auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -165,7 +181,15 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin/users - Delete user
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const _supabaseClient = await createClient();
+    if (!_supabaseClient) {
+      return NextResponse.json(
+        { success: false, error: 'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment.' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = _supabaseClient;
 
     // Check admin auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
