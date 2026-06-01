@@ -4,7 +4,24 @@ All notable changes to **AI Platform (AL.AI.DY)** will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-06-02
+
+### Security (URGENT)
+- **DB password was hardcoded in `scripts/db-reset-runner.js`** and
+  committed in `eee9c54`. **It is now public in the GitHub repo.**
+  **Action required:**
+  1. **Rotate the Supabase database password immediately** —
+     Supabase Dashboard → Settings → Database → Database password → Reset.
+  2. The old password is now invalidated and will no longer work
+     against the live database.
+  3. Optionally use [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/)
+     to strip the password from old commits and force-push.
+- **The runner now reads `SUPABASE_DB_PASSWORD` from env var** (no
+  hardcoded secrets). Documented inline + below.
+
 ## [Unreleased] — 2026-06-01
+
+### Changed (UX)
 
 ### Changed (UX)
 - **Removed all 7 public-facing Admin links** from the header/nav of
