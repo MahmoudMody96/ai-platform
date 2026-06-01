@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — 2026-06-01
 
+### Changed (UX)
+- **Removed all 7 public-facing Admin links** from the header/nav of
+  5 pages: `ToolHeader.tsx`, `categories/page.tsx`, `about/page.tsx`,
+  `blog/[slug]/page.tsx`, `categories/[slug]/page.tsx`. Visitors
+  no longer see "الدخول للأدمن" or "لوحة التحكم" buttons. The
+  admin panel is still accessible directly at `/admin/login` —
+  the proxy.ts route guard (role check from `profiles.role`) is
+  the only access control. Bookmark `/admin/login` or remember
+  the URL; no UI shortcut exists in the public site.
+
 ### Added (db reset tooling)
 - `supabase/migrations/000_reset_all.sql` — DESTRUCTIVE: drops every
   table, enum, function, trigger, and policy in the `public` schema.

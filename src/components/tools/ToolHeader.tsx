@@ -29,11 +29,7 @@ export function ToolHeader() {
               المدونة
             </Link>
           </nav>
-          <div className="flex items-center gap-2">
-            <Link href="/admin">
-              <Button size="sm">الدخول للأدمن</Button>
-            </Link>
-          </div>
+          {/* Admin link removed: no public UI for /admin. Access at /admin/login directly. */}
         </div>
       </div>
     </header>

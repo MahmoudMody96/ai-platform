@@ -285,7 +285,7 @@ export default function CategoryDetailPage() {
               <Link href="/tools" className="text-sm text-muted-foreground hover:text-foreground">الأدوات</Link>
               <Link href="/categories" className="text-sm font-medium text-primary">الفئات</Link>
             </nav>
-            <Link href="/admin"><Button size="sm">الدخول للأدمن</Button></Link>
+            {/* Admin link removed: no public UI for /admin. Access at /admin/login directly. */}
           </div>
         </div>
       </header>

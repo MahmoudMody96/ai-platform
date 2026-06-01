@@ -61,9 +61,8 @@ export default function AboutPage() {
               <Link href="/tools" className="text-sm text-muted-foreground hover:text-foreground">الأدوات</Link>
               <Link href="/categories" className="text-sm text-muted-foreground hover:text-foreground">الفئات</Link>
               <Link href="/about" className="text-sm font-medium text-primary">عن المنصة</Link>
-              <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground">لوحة التحكم</Link>
             </nav>
-            <Link href="/admin"><Button size="sm">الدخول للأدمن</Button></Link>
+            {/* Admin links removed: no public UI for /admin. Access at /admin/login directly. */}
           </div>
         </div>
       </header>

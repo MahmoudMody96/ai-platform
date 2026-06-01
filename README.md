@@ -1664,6 +1664,27 @@ psql "$DATABASE_URL" -f supabase/scripts/reset-and-apply.sql
 
 تأكد إن `NEXT_PUBLIC_SITE_URL` في Vercel = الـ production domain (مش `http://localhost:3000`).
 
+### 🔐 Admin Panel Access
+
+الـ Admin Panel **مش مربوط بأي زرار في الـ public UI** (تم إزالة كل الـ links في 2026-06-01 update). للوصول:
+
+1. روح لـ `https://your-domain.com/admin/login` **يدوياً**
+2. أو استخدم bookmark — مفيش UI shortcut
+
+**ليه؟**
+- Visitor experience: الـ user العادي ميحتاجش يشوف "الدخول للأدمن" في الـ header
+- Security: مفيش attack surface جديد — الـ proxy.ts بيفحص `profiles.role` من DB (server-trusted)
+
+**الـ RBAC (Role-Based Access Control) لسه شغّال:**
+- `/admin/login` → public
+- `/admin` → redirects to login if not authenticated
+- `/admin/*` (tools, articles, users, settings, etc.) → role check via `profiles.role` ∈ {admin, super_admin, editor}
+- غير admins → redirect to `/admin?error=access_denied`
+
+**لو عايز تضيف admin shortcut:**
+- اعمل keyboard shortcut: `Ctrl+Shift+A` يفتح `/admin/login` (في `app/layout.tsx` client component)
+- أو اعمل magic link في `/auth/login` للـ admin emails فقط (gated by email allowlist)
+
 ---
 
 

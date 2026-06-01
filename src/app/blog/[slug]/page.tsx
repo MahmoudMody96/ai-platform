@@ -433,11 +433,7 @@ export default function ArticleDetailPage() {
               <Link href="/blog" className="text-sm font-medium text-primary">المدونة</Link>
               <Link href="/tools" className="text-sm text-muted-foreground hover:text-foreground">الأدوات</Link>
             </nav>
-            <div className="flex items-center gap-2">
-              <Link href="/admin">
-                <Button size="sm">الدخول للأدمن</Button>
-              </Link>
-            </div>
+            {/* Admin link removed: no public UI for /admin. Access at /admin/login directly. */}
           </div>
         </div>
       </header>

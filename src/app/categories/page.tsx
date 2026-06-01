@@ -136,9 +136,8 @@ export default function CategoriesPage() {
               <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">الرئيسية</Link>
               <Link href="/tools" className="text-sm text-muted-foreground hover:text-foreground">الأدوات</Link>
               <Link href="/categories" className="text-sm font-medium text-primary">الفئات</Link>
-              <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground">لوحة التحكم</Link>
             </nav>
-            <Link href="/admin"><Button size="sm">الدخول للأدمن</Button></Link>
+            {/* Admin links removed: no public UI for /admin. Access at /admin/login directly. */}
           </div>
         </div>
       </header>
