@@ -46,26 +46,23 @@ BEGIN
   SELECT id INTO cat_search FROM categories WHERE slug = 'search';
 
   -- Assistants
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('ChatGPT', 'chatgpt', 'مساعد ذكي للمحادثة والكتابة',
      'نموذج لغوي كبير من OpenAI للمحادثة، الكتابة، الترجمة، وتوليد الأفكار.',
-     'https://chat.openai.com', 'freemium', 2000, 'USD', cat_assistants,
+     'https://chat.openai.com', 'freemium', 20.00, 'USD', cat_assistants,
      ARRAY['chatbot','writing','translation'], '[{"title":"محادثة ذكية","desc":"فهم سياق المحادثة"},{"title":"كتابة محتوى","desc":"مقالات، إيميلات، سكريبت"},{"title":"برمجة","desc":"كتابة وشرح الكود"}]'::jsonb,
      true, true, '{"views":0,"saves":0,"uses":0,"rating":4.9,"reviews_count":15420}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Claude', 'claude', 'مساعد للتحليل والكتابة الطويلة',
      'نموذج من Anthropic متميز في المحادثات الطويلة والتحليل العميق.',
-     'https://claude.ai', 'freemium', 2000, 'USD', cat_assistants,
+     'https://claude.ai', 'freemium', 20.00, 'USD', cat_assistants,
      ARRAY['chatbot','analysis','long-context'], '[{"title":"سياق طويل","desc":"حتى 200K token"},{"title":"تحليل عميق","desc":"منطق واستدلال"}]'::jsonb,
      true, true, '{"views":0,"saves":0,"uses":0,"rating":4.8,"reviews_count":8920}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Gemini', 'gemini', 'مساعد Google مع البحث الحي',
      'مساعد ذكي من Google يدمج البحث الفعلي بنموذج لغوي متقدم.',
      'https://gemini.google.com', 'free', 0, 'USD', cat_assistants,
@@ -74,80 +71,72 @@ BEGIN
   ON CONFLICT (slug) DO NOTHING;
 
   -- Image generation
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Midjourney', 'midjourney', 'صور فنية مذهلة',
      'من Midjourney لتوليد صور فنية عالية الجودة من الأوصاف النصية.',
-     'https://midjourney.com', 'paid', 1000, 'USD', cat_images,
+     'https://midjourney.com', 'paid', 10.00, 'USD', cat_images,
      ARRAY['images','art','discord'], '[{"title":"جودة فنية","desc":"صور بستايل فني"},{"title":"أنماط متعددة","desc":"photoreal, anime, ..."}]'::jsonb,
      true, true, '{"views":0,"saves":0,"uses":0,"rating":4.7,"reviews_count":6540}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('DALL-E 3', 'dalle-3', 'توليد صور من OpenAI',
      'مولد صور من OpenAI بدقة عالية ويفهم التعليمات المعقدة.',
-     'https://openai.com/dall-e-3', 'paid', 2000, 'USD', cat_images,
+     'https://openai.com/dall-e-3', 'paid', 20.00, 'USD', cat_images,
      ARRAY['images','openai','hd'], '[{"title":"دقة عالية","desc":"صور HD"},{"title":"نص في الصور","desc":"يدعم كتابة نصوص في الصور"}]'::jsonb,
      true, true, '{"views":0,"saves":0,"uses":0,"rating":4.5,"reviews_count":3280}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Coding
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('GitHub Copilot', 'github-copilot', 'مساعد برمجي ذكي',
      'مساعد من GitHub وOpenAI يقترح كود داخل الـ IDE.',
-     'https://github.com/features/copilot', 'paid', 1000, 'USD', cat_coding,
+     'https://github.com/features/copilot', 'paid', 10.00, 'USD', cat_coding,
      ARRAY['coding','ide','autocomplete'], '[{"title":"إكمال تلقائي","desc":"اقتراح سطور ودوال"},{"title":"دردشة كود","desc":"شرح وإعادة كتابة"}]'::jsonb,
      true, true, '{"views":0,"saves":0,"uses":0,"rating":4.4,"reviews_count":12850}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Writing
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Notion AI', 'notion-ai', 'ذكاء اصطناعي داخل Notion',
      'مساعد ذكي مدمج في Notion للتلخيص، الترجمة، وكتابة الملاحظات.',
-     'https://notion.so/product/ai', 'paid', 1000, 'USD', cat_writing,
+     'https://notion.so/product/ai', 'paid', 10.00, 'USD', cat_writing,
      ARRAY['writing','notes','notion'], '[{"title":"تلخيص","desc":"تلخيص النصوص الطويلة"},{"title":"ترجمة","desc":"دعم متعدد اللغات"}]'::jsonb,
      false, true, '{"views":0,"saves":0,"uses":0,"rating":4.3,"reviews_count":2150}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Audio
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('ElevenLabs', 'elevenlabs', 'أصوات واقعية من نص',
      'تحويل نص إلى كلام بأصوات واقعية متعددة اللغات.',
-     'https://elevenlabs.io', 'freemium', 500, 'USD', cat_audio,
+     'https://elevenlabs.io', 'freemium', 5.00, 'USD', cat_audio,
      ARRAY['tts','voice','arabic'], '[{"title":"أصوات طبيعية","desc":"9 أصوات عربية"},{"title":"استنساخ صوت","desc":"بنموذج 60 ثانية"}]'::jsonb,
      false, true, '{"views":0,"saves":0,"uses":0,"rating":4.6,"reviews_count":1820}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Video
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Runway', 'runway', 'إنشاء فيديو بالذكاء الاصطناعي',
      'أداة متقدمة لتوليد وتحرير الفيديو من نصوص وصور.',
-     'https://runwayml.com', 'paid', 1500, 'USD', cat_video,
+     'https://runwayml.com', 'paid', 15.00, 'USD', cat_video,
      ARRAY['video','gen-2','editing'], '[{"title":"توليد فيديو","desc":"من نص أو صورة"},{"title":"تحرير متقدم","desc":"Inpainting للفيديو"}]'::jsonb,
      false, true, '{"views":0,"saves":0,"uses":0,"rating":4.4,"reviews_count":2560}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Automation
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Zapier', 'zapier', 'ربط تطبيقاتك ببعض',
      'منصة أتمتة تربط بين آلاف التطبيقات بدون كود.',
-     'https://zapier.com', 'paid', 2000, 'USD', cat_automation,
+     'https://zapier.com', 'paid', 20.00, 'USD', cat_automation,
      ARRAY['automation','workflow','integration'], '[{"title":"بدون كود","desc":"سحب وإفلات"},{"title":"AI Actions","desc":"دمج GPT في الـ Zaps"}]'::jsonb,
      false, true, '{"views":0,"saves":0,"uses":0,"rating":4.3,"reviews_count":3240}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
 
   -- Search
-  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price_cents, currency, category_id, tags, features, is_featured, is_active, stats)
-  VALUES
+  INSERT INTO tools (name, slug, tagline, description, website_url, pricing_model, monthly_price, pricing_currency, category_id, tags, features, is_featured, is_published, stats) VALUES
     ('Perplexity', 'perplexity', 'محرك بحث ذكي',
      'محرك بحث يستخدم الذكاء الاصطناعي مع مصادر موثوقة.',
-     'https://perplexity.ai', 'freemium', 2000, 'USD', cat_search,
+     'https://perplexity.ai', 'freemium', 20.00, 'USD', cat_search,
      ARRAY['search','research','citations'], '[{"title":"مصادر","desc":"روابط لكل إجابة"},{"title":"Focus modes","desc":"Academic, YouTube, ..."}]'::jsonb,
      false, true, '{"views":0,"saves":0,"uses":0,"rating":4.5,"reviews_count":3890}'::jsonb)
   ON CONFLICT (slug) DO NOTHING;
@@ -168,10 +157,10 @@ BEGIN
 
   INSERT INTO articles (title, slug, excerpt, content, author_id, category_id, tags, status, featured, read_time, published_at, is_premium)
   VALUES
-    ('دليلك الشامل لأدوات الذكاء الاصطناعي 2026',
+    ('دليلك الشامل لأدوات الذكاء الاصطناعي في 2026',
      'ai-tools-guide-2026',
-     'اكتشف أهم أدوات الذكاء الاصطناعي لهذا العام وكيفية استخدامها بفعالية.',
-     '# دليلك الشامل لأدوات الذكاء الاصطناعي 2026
+     'اكتشف أهم أدوات الذكاء الاصطناعي وأكثرها قوة في هذا الدليل الشامل.',
+     '# دليلك الشامل لأدوات الذكاء الاصطناعي في 2026
 
 في هذا الدليل نستعرض أهم الأدوات المتاحة في 2026 ونقارن بينها من حيث السعر والمميزات.
 

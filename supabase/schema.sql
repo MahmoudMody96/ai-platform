@@ -201,6 +201,7 @@ CREATE TABLE tools (
     pricing_currency TEXT DEFAULT 'USD',
     starting_price DECIMAL(10,2),
     monthly_price DECIMAL(10,2),
+    monthly_price_cents INTEGER,  -- legacy alias: same value as starting_price in cents
     pricing_model TEXT DEFAULT 'freemium',  -- legacy alias for pricing_type
     pricing_info JSONB DEFAULT '{}'::jsonb,
     screenshots JSONB DEFAULT '[]'::jsonb,
@@ -226,6 +227,7 @@ CREATE TABLE tools (
     pros JSONB DEFAULT '[]'::jsonb,
     cons JSONB DEFAULT '[]'::jsonb,
     submitted_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    stats JSONB DEFAULT '{"views":0,"saves":0,"uses":0,"rating":0,"reviews_count":0}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -69,6 +69,13 @@ END
 $$;
 
 -- ============================================================================
+-- 2.5. Drop extensions that own functions in the public schema
+--      (pg_trgm functions like `similarity()` are protected by the extension
+--       and can't be DROP'd directly — must drop the extension first.)
+-- ============================================================================
+DROP EXTENSION IF EXISTS pg_trgm CASCADE;
+
+-- ============================================================================
 -- 3. Drop every FUNCTION in the public schema
 --    (CASCADE so dependent triggers / defaults are removed too)
 -- ============================================================================
