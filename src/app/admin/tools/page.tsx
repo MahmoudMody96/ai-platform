@@ -264,7 +264,7 @@ export default function AdminToolsPage() {
       website_url: tool.website_url || '',
       documentation_url: tool.documentation_url || '',
       category_id: tool.category_id || '',
-      pricing_model: tool.pricing_model,
+      pricing_model: (tool.pricing_model ?? 'freemium') as 'free' | 'freemium' | 'paid' | 'contact',
       monthly_price: tool.monthly_price?.toString() || '',
       tags: tool.tags?.join(', ') || '',
       is_featured: tool.is_featured,
@@ -409,7 +409,7 @@ export default function AdminToolsPage() {
                         <Badge variant="outline">{getCategoryName(tool.category_id)}</Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <PricingBadge pricing={tool.pricing_model} />
+                        <PricingBadge pricing={(tool.pricing_model ?? 'freemium') as 'free' | 'freemium' | 'paid' | 'contact'} />
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
@@ -767,7 +767,7 @@ export default function AdminToolsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">التسعير</p>
-                  <PricingBadge pricing={selectedTool.pricing_model} />
+                  <PricingBadge pricing={(selectedTool.pricing_model ?? 'freemium') as 'free' | 'freemium' | 'paid' | 'contact'} />
                 </div>
                 {selectedTool.monthly_price && (
                   <div>

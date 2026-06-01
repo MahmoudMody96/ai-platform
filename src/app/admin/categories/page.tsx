@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/modal';
 import { Plus, Edit, Trash2, Loader2, Check, AlertTriangle, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
-import type { Category } from '@/types';
+import type { Category, CategoryWithChildren } from '@/types';
 
 interface CategoryFormData {
   name: string;
@@ -88,8 +88,8 @@ export default function AdminCategoriesPage() {
 
   // Flatten categories for display
   const flatCategories = React.useMemo(() => {
-    const result: Category[] = [];
-    const flatten = (cats: Category[], level = 0) => {
+    const result: CategoryWithChildren[] = [];
+    const flatten = (cats: CategoryWithChildren[], level = 0) => {
       cats.forEach(cat => {
         result.push({ ...cat });
         if (cat.children && cat.children.length > 0) {

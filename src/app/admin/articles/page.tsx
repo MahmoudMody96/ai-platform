@@ -247,7 +247,7 @@ export default function AdminArticlesPage() {
       tags: article.tags?.join(', ') || '',
       status: article.status,
       featured: article.featured,
-      read_time: article.read_time,
+      read_time: article.read_time ?? 5,
     });
     setShowEditDialog(true);
   };

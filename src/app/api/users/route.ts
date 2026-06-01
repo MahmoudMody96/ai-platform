@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { paginationSchema, updateUserRoleSchema } from '@/lib/validation/schemas';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api/response';
-import type { User } from '@/types';
+import type { Profile as User } from '@/types';
 
 // GET /api/users - List users (admin only)
 export async function GET(request: NextRequest) {

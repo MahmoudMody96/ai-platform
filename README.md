@@ -23,10 +23,54 @@
 | [12](#12-deployment) | Deployment & CI/CD |
 | [13](#13-agent-task-map) | Agent Task Map |
 | [14](#14-checklists) | Checklists |
+| [15](#15-التحديثات-الأخيرة) | التحديثات الأخيرة (2026-06-01) |
 
 ---
 
-## 1. رؤية المشروع
+## 0. آخر التحديثات (2026-06-01)
+
+> **مهم:** لو أنت agent أو contributor جديد، ابدأ من هنا. الـ README ده فيه الـ vision الكامل، والـ section دي فيها كل اللي اتغيّر مؤخراً.
+
+### 🔒 Security fixes (CRITICAL)
+- **Role check** بقت من `profiles.role` (DB) بدل `user.user_metadata.role` (client-editable)
+- **Cookie handling** في `proxy.ts` — بقى بيستدعي `response.cookies.set` و بيطبق `httpOnly`/`sameSite`/`secure`
+- **Security headers** — CSP, HSTS, Permissions-Policy, X-XSS-Protection في `next.config.ts`
+
+### 🧹 Cleanup
+- `setup-db.sql` (مخلفات POS project) — اتشال
+- `src/middleware.ts.disabled` — اتشال
+- 8 trash JSON files (`args.json`, `form.json`, `nav.json`, etc.) — اتشالت
+- `database/` folder (3 migrations مكررة) — اتشال، الـ schema بقى في `supabase/`
+- 2 مكررات من `supabase/migrations/001_*` و `002_*` — اتشالت، الـ canonical بقى `supabase/schema.sql`
+- `about-page.png` — اتنقل لـ `public/`
+
+### 🆕 New files
+- `supabase/schema.sql` — **Canonical schema** (14 tables, ENUMs, RLS, triggers, seed plans)
+- `supabase/migrations/003_arabic_seed_data.sql` — Arabic categories/tools/articles
+- `src/lib/env.ts` — Typed env validation (server-only guards)
+- `src/lib/ratelimit.ts` — Upstash rate limiting (proxy/api/auth/reviews/newsletter/admin) مع in-memory fallback
+- `src/components/tools/*` — تقسيم `ToolDetailClient.tsx` (30KB → 9 files)
+- `vitest.config.ts` + 3 test suites
+- `CHANGELOG.md` — Keep-a-Changelog format
+
+### 📝 New npm scripts
+```bash
+npm run type-check       # tsc --noEmit
+npm test                # vitest run
+npm run test:watch      # vitest (watch mode)
+npm run test:coverage   # vitest run --coverage
+npm run db:types        # regenerate src/types/database.types.ts from live Supabase
+npm run db:reset        # supabase db reset
+```
+
+### ⚠️ Breaking notes
+- **`.env` rule**: متـ commitش `SUPABASE_SERVICE_ROLE_KEY` — خليها server-only في Vercel dashboard
+- **`lucide-react@1.x`**: الإصدار ده series جديد (مش قديم) — الـ `0.4xx` كانت السلسلة القديمة قبل reset
+- **`src/middleware.ts` → `src/proxy.ts`**: ده pattern Next.js 16 — مش typo
+- **`database/` folder اتشال**: استخدم `supabase/migrations/` بس
+
+---
+
 
 ### 🎯 المشكلة التي نحلها
 المطورون والمحترفون العرب (100M+ شخص) يبحثون عن أدوات الذكاء الاصطناعي لكن:
@@ -147,7 +191,7 @@ Deployment:
     "slugify": "^1.6.6",
     "date-fns": "^3.6.0",
     "date-fns/locale/ar": "*",
-    "lucide-react": "^0.400.0",
+    "lucide-react": "^1.16.0",
     "next-themes": "^0.3.0",
     "sonner": "^1.5.0",
     "class-variance-authority": "^0.7.0",
@@ -378,18 +422,21 @@ ai-platform/
 │   │
 │   ├── 📁 types/
 │   │   ├── database.types.ts                # Auto-generated من Supabase
-│   │   └── index.ts                         # Custom types + type aliases
+│   │   └── index.ts                         # Barrel: re-exports from database.types + AppUser/ApiResponse
 │   │
-│   └── middleware.ts                        # Auth + Rate Limiting + i18n
+│   └── proxy.ts                             # Next.js 16: Auth + Rate Limiting (NOT middleware.ts)
 │
-├── 📁 database/
-│   ├── migrations/                          # ترتيب رقمي: 001_, 002_...
-│   │   ├── 001_initial_schema.sql
-│   │   ├── 002_rls_policies.sql
-│   │   ├── 003_search_indexes.sql
-│   │   ├── 004_functions.sql
-│   │   └── 005_seed_categories.sql
-│   └── seed.ts                              # Script لملء البيانات التجريبية
+├── 📁 supabase/                             # 🔑 Canonical DB schema (source of truth)
+│   ├── schema.sql                           # Full schema: 14 tables, ENUMs, RLS, triggers, seed plans
+│   └── migrations/                          # Numbered, additive migrations
+│       └── 003_arabic_seed_data.sql         # Arabic categories, tools, articles (idempotent)
+│
+│   # ملاحظة: الـ database.types.ts و supabase/schema.sql لازم يكونوا متطابقين.
+│   # لتجديد الـ types بعد تعديل الـ schema:
+│   #   npm run db:types
+│
+├── 📁 database/                            # ❌ Removed in 2026-06-01 — moved to supabase/
+│   # (legacy migrations were duplicates; canonical schema is now supabase/schema.sql)
 │
 ├── 📁 emails/                               # React Email templates
 │   ├── WelcomeEmail.tsx
@@ -417,9 +464,10 @@ ai-platform/
 ### جدول الفئات `categories`
 
 ```sql
--- 001_initial_schema.sql (جزء 1)
+-- supabase/schema.sql (الـ canonical — generated 2026-06-01)
+-- لو عدّلت الـ schema، اعمل regenerate للـ types بـ: npm run db:types
 CREATE TABLE categories (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name        TEXT NOT NULL,                  -- "كتابة المحتوى"
   name_en     TEXT,                           -- "Content Writing"
   slug        TEXT UNIQUE NOT NULL,           -- "content-writing"
@@ -718,7 +766,7 @@ $$ LANGUAGE sql STABLE;
 ### Row Level Security (RLS)
 
 ```sql
--- 002_rls_policies.sql
+-- supabase/schema.sql — RLS section (inlined in the canonical schema)
 
 ALTER TABLE tools     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews   ENABLE ROW LEVEL SECURITY;
@@ -1516,6 +1564,72 @@ SEO:
 # 3. راجع Next.js docs: nextjs.org/docs
 # 4. تواصل: admin@aiplatform.com
 ```
+
+---
+
+## 15. التحديثات الأخيرة
+
+راجع [CHANGELOG.md](./CHANGELOG.md) للتفاصيل الكاملة. أهم الحاجات:
+
+### 🧱 بنية `src/components/tools/` (كانت 30KB في ملف واحد، بقت 9 ملفات)
+
+```
+src/components/tools/
+├── index.ts              # Barrel — للاستيراد من @/components/tools
+├── types.ts              # ToolDetail, ToolReview, PricingType...
+├── utils.ts              # getPricingLabel, formatDate, getShareUrl
+├── ToolHeader.tsx        # Header + Breadcrumb (~80 سطر)
+├── ToolHero.tsx          # Hero + Share bar (~200 سطر)
+├── ToolContent.tsx       # About + Features sections (~50 سطر)
+├── ToolReviews.tsx       # Review form + list (~150 سطر)
+├── ToolAlternatives.tsx  # Alternatives grid (~60 سطر)
+├── ToolSidebar.tsx       # Pricing / Quick Info / Tags / Links (~200 سطر)
+└── ToolFooter.tsx        # Footer (~25 سطر)
+```
+
+`ToolDetailClient.tsx` (orchestrator) بقى **~115 سطر** بدل 661.
+
+### 📁 بنية الـ DB Schema
+
+```
+supabase/
+├── schema.sql                              # 🔑 Canonical (source of truth)
+└── migrations/
+    └── 003_arabic_seed_data.sql            # Arabic seed (idempotent)
+```
+
+- ملف `setup-db.sql` (مخلفات POS) اتشال
+- مجلد `database/` (3 migrations مكررة) اتشال
+- `supabase/migrations/001_*` و `002_*` اتشالت (superseded بـ schema.sql)
+
+### 🛠️ بنية `src/lib/`
+
+```
+src/lib/
+├── env.ts             # Typed env validation (server-only guards)
+├── ratelimit.ts       # Upstash + in-memory fallback
+├── ratelimit.test.ts  # vitest
+├── env.test.ts        # vitest
+├── api/response.ts    # successResponse, errorResponse, paginatedResponse
+├── seo/               # sitemap + metadata helpers
+├── supabase/          # 8 helpers (client, server, middleware, queries, ...)
+├── utils/             # cn(), formatters
+└── validation/        # Zod schemas
+```
+
+### ✅ بعد آخر تحديث
+
+| المؤشر | قبل | بعد |
+|--------|-----|-----|
+| TypeScript errors | 38+ | 4 (بس vitest imports — `npm install`) |
+| DB schema files | 5 متضاربين | 1 canonical + 1 migration |
+| Security role check | `user_metadata` (client-editable) | `profiles.role` (server-trusted) |
+| Cookie handling | مش بيحدّث response | بيحدّث + httpOnly + sameSite + secure |
+| Security headers | 4 (X-Frame, X-Content-Type, Referrer, X-DNS) | 8 (+ CSP, HSTS, Permissions-Policy, X-XSS) |
+| Rate limiting | مفيش | Upstash + in-memory fallback |
+| Unit tests | 0 | 3 test suites |
+| `ToolDetailClient.tsx` | 661 سطر | 115 سطر orchestrator + 9 components |
+| Env validation | مفيش | typed + server-only guards |
 
 ---
 

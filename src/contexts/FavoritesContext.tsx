@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/types';
 
 interface Favorite {
   id: string;
@@ -89,11 +90,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Note: we only set tool_id OR article_id per the favorites_target CHECK
+      // constraint, so we cast to the partial Insert type that allows both.
       const { error } = await supabaseRef.current.from('favorites').insert({
         user_id: session.user.id,
         tool_id: toolId ?? null,
         article_id: articleId ?? null,
-      } as never);
+      } as unknown as Database['public']['Tables']['favorites']['Insert']);
 
       if (error && !error.message.includes('duplicate')) {
         return { success: false, error: error.message };
