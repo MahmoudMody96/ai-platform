@@ -341,7 +341,38 @@ CREATE INDEX idx_comments_tool_id ON comments(tool_id);
 CREATE INDEX idx_comments_author_id ON comments(author_id);
 
 -- ============================================================================
--- 11. Newsletter Subscribers
+-- 7.5. Grants (RLS only filters rows; the base SELECT/INSERT/UPDATE/DELETE
+--      privileges on the tables themselves must be granted explicitly).
+-- ============================================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
+-- Existing tables
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
+  TO anon, authenticated, service_role;
+
+-- Future tables (so new tables created by migrations inherit grants)
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES
+  TO anon, authenticated, service_role;
+
+-- Sequences (used by serial / generated columns)
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public
+  TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT USAGE, SELECT, UPDATE ON SEQUENCES
+  TO anon, authenticated, service_role;
+
+-- Functions (e.g. generate_slug, search_tools)
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public
+  TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT EXECUTE ON FUNCTIONS
+  TO anon, authenticated, service_role;
+
+-- ============================================================================
+-- 8. Row Level Security
 -- ============================================================================
 CREATE TABLE newsletter_subscribers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

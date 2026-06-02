@@ -5,6 +5,7 @@
 
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Script from 'next/script';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { generateToolMetadata, generateToolStructuredData } from '@/lib/seo';
@@ -24,30 +25,40 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data: tool } = await supabase
     .from('tools')
     .select('*, category:categories(*)')
-    .or(`slug.eq.${slug},id.eq.${slug}`)
+    .eq('slug', slug)
     .eq('status', 'published')
     .single();
 
   if (!tool) return { title: 'الأداة غير موجودة' };
 
-  return generateToolMetadata(tool);
+  return generateToolMetadata({
+    ...tool,
+    url: `/tools/${tool.slug}`,
+  });
 }
 
 export default async function ToolDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createClient();
   if (!supabase) {
+    console.log('[tools/[slug]] supabase client is null — env vars:', {
+      url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      key: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
     notFound();
   }
 
   // Get tool data
+  // Slug-based lookup (URLs only carry slugs; the `id` is UUID so we
+  // can't combine both in a single .or() without Postgres choking on
+  // "chatgpt" being passed as a UUID candidate).
   const { data: tool, error } = await supabase
     .from('tools')
     .select(`
       *,
       category:categories(id, name, slug, color, icon)
     `)
-    .or(`slug.eq.${slug},id.eq.${slug}`)
+    .eq('slug', slug)
     .eq('status', 'published')
     .single();
 
@@ -122,11 +133,18 @@ export default async function ToolDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <script
+      {/* JSON-LD structured data. next/script with strategy="beforeInteractive"
+          puts the script in the document <head> with the correct JSON-LD
+          type and avoids the React "script inside component" warning that
+          the previous inline <script> triggered during hydration. */}
+      <Script
+        id="ld-json"
         type="application/ld+json"
+        strategy="beforeInteractive"
+        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: toolStructuredData }}
       />
-      <ToolDetailClient 
+      <ToolDetailClient
         tool={{
           ...tool,
           recent_reviews: reviews || [],

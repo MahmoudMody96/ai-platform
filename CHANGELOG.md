@@ -6,6 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased] — 2026-06-02
 
+### Fixed (runtime)
+- **Tool detail pages returning 404** — `src/app/tools/[slug]/page.tsx` was
+  running `.or(\`slug.eq.${slug},id.eq.${slug}\`)` on a `tools` table where
+  `id` is a UUID. Postgres rejected the slug string with `22P02 invalid
+  input syntax for type uuid`. Replaced with a plain `.eq('slug', slug)`
+  for both `generateMetadata()` and the page body. `/tools/chatgpt`,
+  `/tools/claude`, `/tools/gemini`, etc. now return 200.
+- **`/api/tools` returning empty** — RLS policies were correct but the
+  `anon` and `authenticated` roles had no `GRANT` privileges on the
+  public tables, so Postgres returned `42501 permission denied`. Added
+  `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
+  TO anon, authenticated, service_role` and a matching `ALTER DEFAULT
+  PRIVILEGES` to both `supabase/schema.sql` (new section 7.5) and a
+  new migration `supabase/migrations/004_grants.sql` for the live DB.
+  11 tools now load.
+- **Homepage showing hardcoded mock data** — `src/app/page.tsx` was
+  returning a static `featuredTools` array. It now `useState`/`useEffect`
+  fetches `/api/tools?featured=true&pageSize=4&sort=rating` and
+  `/api/categories?limit=8`, with the mock kept as a defensive fallback.
+  Icon resolvers (`_iconForSlug` / `_iconForCategorySlug`) translate DB
+  slugs into Lucide icons.
+- **Script-tag warning in tool detail page** — replaced the inline
+  `<script dangerouslySetInnerHTML>` for JSON-LD with
+  `import Script from 'next/script'` and `strategy="beforeInteractive"`.
+  No more "script inside component" hydration warning.
+
+### Fixed (SEO)
+- **Broken canonical/og URLs** — `generateToolMetadata()` was being
+  called without a `url` field, so `${SITE_CONFIG.url}${tool.url}`
+  produced `https://...vercel.appundefined`. The tool page now passes
+  `url: \`/tools/${tool.slug}\`` to both the metadata generator and
+  the JSON-LD generator, so canonical/og/twitter URLs are clean.
+
+### Added
+- `supabase/migrations/004_grants.sql` — applies the GRANT statements
+  above to the live database.
+
 ### Security (URGENT)
 - **DB password was hardcoded in `scripts/db-reset-runner.js`** and
   committed in `eee9c54`. **It is now public in the GitHub repo.**

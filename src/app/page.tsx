@@ -49,57 +49,102 @@ const colors = {
   rose: { primary: '#EC4899', light: '#F472B6', dark: '#DB2777' },
 };
 
-// Mock data - Featured Tools
-const featuredTools = [
+// Mock data — Featured Tools (used as fallback when the API is unavailable,
+// e.g. during build without env vars).
+const _mockFeaturedTools = [
   {
     id: '1',
     slug: 'chatgpt',
     name: 'ChatGPT',
-    description: 'أذكى مساعد ذكي في العالم للمحادثة والكتابة والترجمة',
+    tagline: 'أذكى مساعد ذكي في العالم للمحادثة والكتابة والترجمة',
+    description: null,
     logo_url: null,
     pricing_type: 'freemium',
-    rating: 4.9,
+    rating_avg: 4.9,
+    rating_count: 15420,
     reviews: 15420,
-    category: { name_ar: 'مساعدون ذكيون', color: colors.violet.primary },
+    category: { name: 'مساعدون ذكيون', color: colors.violet.primary },
     icon: Bot,
   },
   {
     id: '2',
     slug: 'midjourney',
     name: 'Midjourney',
-    description: 'حوّل أفكارك إلى صور فنية مذهلة بالذكاء الاصطناعي',
+    tagline: 'حوّل أفكارك إلى صور فنية مذهلة بالذكاء الاصطناعي',
+    description: null,
     logo_url: null,
     pricing_type: 'paid',
-    rating: 4.7,
+    rating_avg: 4.7,
+    rating_count: 6540,
     reviews: 6540,
-    category: { name_ar: 'توليد الصور', color: colors.rose.primary },
+    category: { name: 'توليد الصور', color: colors.rose.primary },
     icon: ImageIcon,
   },
   {
     id: '3',
     slug: 'claude',
     name: 'Claude',
-    description: 'مساعدك الذكي للتأمل والتحليل من Anthropic',
+    tagline: 'مساعدك الذكي للتأمل والتحليل من Anthropic',
+    description: null,
     logo_url: null,
     pricing_type: 'freemium',
-    rating: 4.8,
+    rating_avg: 4.8,
+    rating_count: 8920,
     reviews: 8920,
-    category: { name_ar: 'مساعدون ذكيون', color: colors.violet.primary },
+    category: { name: 'مساعدون ذكيون', color: colors.violet.primary },
     icon: Bot,
   },
   {
     id: '4',
     slug: 'gemini',
     name: 'Gemini',
-    description: 'من Google مع قوة البحث والذكاء الاصطناعي',
+    tagline: 'من Google مع قوة البحث والذكاء الاصطناعي',
+    description: null,
     logo_url: null,
     pricing_type: 'free',
-    rating: 4.6,
+    rating_avg: 4.6,
+    rating_count: 4820,
     reviews: 4820,
-    category: { name_ar: 'مساعدون ذكيون', color: colors.cyan.primary },
+    category: { name: 'مساعدون ذكيون', color: colors.cyan.primary },
     icon: Bot,
   },
 ];
+
+  const _mockCategories = [
+  { slug: 'ai-assistants', name: 'مساعدون ذكيون', icon: Bot, count: 45, color: colors.violet.primary, gradient: 'from-violet-500 to-purple-600' },
+  { slug: 'image-generation', name: 'توليد الصور', icon: ImageIcon, count: 32, color: colors.rose.primary, gradient: 'from-pink-500 to-rose-600' },
+  { slug: 'automation', name: 'أتمتة', icon: Zap, count: 28, color: colors.cyan.primary, gradient: 'from-cyan-500 to-blue-600' },
+  { slug: 'coding', name: 'برمجة', icon: Code2, count: 25, color: colors.emerald.primary, gradient: 'from-emerald-500 to-teal-600' },
+  { slug: 'audio', name: 'صوت', icon: Mic, count: 18, color: colors.amber.primary, gradient: 'from-amber-500 to-orange-600' },
+  { slug: 'video', name: 'فيديو', icon: Video, count: 24, color: '#EF4444', gradient: 'from-red-500 to-pink-600' },
+];
+
+// Icon/gradient resolvers for live API rows. Live data comes from the DB
+// without icon components attached — we map by slug at render time.
+const _TOOL_ICON: Record<string, any> = {
+  chatgpt: Bot, claude: Bot, gemini: Bot, perplexity: Search,
+  midjourney: ImageIcon, 'dalle-3': ImageIcon,
+  'github-copilot': Code2, 'notion-ai': Code2,
+  elevenlabs: Mic, runway: Video, zapier: Zap,
+};
+const _iconForSlug = (slug: string) => _TOOL_ICON[slug] ?? Sparkles;
+
+const _CATEGORY_ICON: Record<string, any> = {
+  'ai-assistants': Bot, 'image-generation': ImageIcon, writing: BookOpen,
+  coding: Code2, audio: Mic, video: Video, automation: Zap, search: Search,
+};
+const _CATEGORY_GRADIENT: Record<string, string> = {
+  'ai-assistants': 'from-violet-500 to-purple-600',
+  'image-generation': 'from-pink-500 to-rose-600',
+  writing: 'from-amber-500 to-orange-600',
+  coding: 'from-emerald-500 to-teal-600',
+  audio: 'from-cyan-500 to-blue-600',
+  video: 'from-red-500 to-pink-600',
+  automation: 'from-blue-500 to-indigo-600',
+  search: 'from-slate-500 to-slate-700',
+};
+const _iconForCategorySlug = (slug: string) => _CATEGORY_ICON[slug] ?? Sparkles;
+const _gradientForCategorySlug = (slug: string) => _CATEGORY_GRADIENT[slug] ?? 'from-slate-500 to-slate-700';
 
 // Categories
 const categories = [
@@ -152,6 +197,50 @@ export default function HomePage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [featuredTools, setFeaturedTools] = React.useState<typeof _mockFeaturedTools>([]);
+  const [homeCategories, setHomeCategories] = React.useState<typeof _mockCategories>([]);
+
+  // Fetch live data on mount; fall back to static mocks if the API
+  // is unreachable (e.g. during a build without env vars).
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [toolsRes, catsRes] = await Promise.all([
+          fetch('/api/tools?featured=true&pageSize=4&sort=rating'),
+          fetch('/api/categories?limit=8'),
+        ]);
+        if (cancelled) return;
+        if (toolsRes.ok) {
+          const json = await toolsRes.json();
+          const list = (json?.data?.data ?? []).map((t: any) => ({
+            ...t,
+            icon: _iconForSlug(t.slug),
+          }));
+          setFeaturedTools(list.length ? list : _mockFeaturedTools);
+        } else {
+          setFeaturedTools(_mockFeaturedTools);
+        }
+        if (catsRes.ok) {
+          const json = await catsRes.json();
+          const list = (json?.data ?? []).map((c: any) => ({
+            name: c.name,
+            count: c.tools_count ?? 0,
+            color: c.color,
+            icon: _iconForCategorySlug(c.slug),
+            gradient: _gradientForCategorySlug(c.slug),
+          }));
+          setHomeCategories(list.length ? list : _mockCategories);
+        } else {
+          setHomeCategories(_mockCategories);
+        }
+      } catch {
+        setFeaturedTools(_mockFeaturedTools);
+        setHomeCategories(_mockCategories);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,10 +427,10 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((cat, i) => (
+            {homeCategories.map((cat, i) => (
               <Link
                 key={i}
-                href={`/categories/${encodeURIComponent(cat.name)}`}
+                href={`/categories/${encodeURIComponent(cat.slug ?? cat.name)}`}
                 className="group relative p-6 rounded-2xl bg-card border border-border/50 hover:border-transparent transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
@@ -389,7 +478,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center gap-1 px-2 py-1 rounded-lg" style={{ backgroundColor: colors.amber.primary + '15' }}>
                       <Star className="w-4 h-4" style={{ color: colors.amber.primary, fill: colors.amber.primary }} />
-                      <span className="text-sm font-semibold" style={{ color: colors.amber.primary }}>{tool.rating}</span>
+                      <span className="text-sm font-semibold" style={{ color: colors.amber.primary }}>{tool.rating_avg}</span>
                     </div>
                   </div>
 
@@ -403,7 +492,7 @@ export default function HomePage() {
                       className="text-xs font-medium px-3 py-1 rounded-full"
                       style={{ backgroundColor: tool.category.color + '15', color: tool.category.color }}
                     >
-                      {tool.category.name_ar}
+                      {tool.category.name}
                     </span>
                     <span className="text-xs text-muted-foreground">{tool.reviews.toLocaleString()} تقييم</span>
                   </div>

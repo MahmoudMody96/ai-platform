@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     const { data: tools, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching tools:', error);
+      console.error('Error fetching tools:', JSON.stringify(error, null, 2), '| code:', error.code, '| message:', error.message, '| details:', error.details, '| hint:', error.hint);
       // Return empty data instead of error to not crash the UI
       return NextResponse.json(successResponse({
         data: [],
